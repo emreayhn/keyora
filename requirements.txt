@@ -1,0 +1,16 @@
+# Keyora — Bağımlılıklar
+# Kurulum: pip install -r requirements.txt
+
+# GUI
+PySide6>=6.6.0
+
+# Şifreleme
+cryptography>=42.0.0
+argon2-cffi>=23.1.0
+
+# Test
+pytest>=8.0.0
+pytest-qt>=4.4.0
+
+# Paketleme (geliştirme ortamında kullanılır)
+PyInstaller>=6.0.0

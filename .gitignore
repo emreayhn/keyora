@@ -1,0 +1,68 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+dist/
+build/
+*.db
+*.sqlite
+.env
+
+# Dışa aktarım dosyaları — yanlışlıkla commit edilmesin
+keyora-export*.csv
+*.export.csv
+*.vaultify
+*.vault
+# Virtual Environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Pytest
+.pytest_cache/
+
+# Build files
+dist/
+build/
+*.spec
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Export files
+keyora-export*.csv
+*.export.csv
+*.vaultify
+*.vaultb
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+# Claude / AI tool files
+.claude/
+claude/
+*.claude
+.cursor/
+.cursor-cache/
+CLAUDE.md
