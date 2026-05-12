@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
 )
 
+from core.database import default_db_path
+
 APP_VERSION = "1.0.0"
 
 
@@ -43,6 +45,14 @@ class AboutDialog(QDialog):
         tech.setTextFormat(Qt.RichText)
         tech.setWordWrap(True)
 
+        location = QLabel(
+            f"<b>Vault konumu:</b><br><span style='font-family: Consolas, monospace;'>"
+            f"{default_db_path()}</span>"
+        )
+        location.setTextFormat(Qt.RichText)
+        location.setWordWrap(True)
+        location.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
         warn = QLabel(
             "<b>Önemli:</b> Master password unutulursa hiçbir veri kurtarılamaz. "
             "Veri internet üzerinden hiçbir yere gönderilmez."
@@ -64,6 +74,8 @@ class AboutDialog(QDialog):
         layout.addWidget(desc)
         layout.addSpacing(4)
         layout.addWidget(tech)
+        layout.addSpacing(4)
+        layout.addWidget(location)
         layout.addSpacing(8)
         layout.addWidget(warn)
         layout.addStretch()

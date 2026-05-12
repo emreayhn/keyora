@@ -20,7 +20,7 @@ VSVersionInfo(
             StringStruct("FileDescription", "Keyora — Local Password Manager"),
             StringStruct("FileVersion", "1.0.0"),
             StringStruct("InternalName", "Keyora"),
-            StringStruct("LegalCopyright", "© Keyora"),
+            StringStruct("LegalCopyright", "© 2026 Emre Ayhan — MIT License"),
             StringStruct("OriginalFilename", "Keyora.exe"),
             StringStruct("ProductName", "Keyora"),
             StringStruct("ProductVersion", "1.0.0"),

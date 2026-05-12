@@ -1,7 +1,9 @@
 """Keyora SQLite katmanı — şema, CRUD, password_history rotation."""
 from __future__ import annotations
 
+import os
 import sqlite3
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
@@ -46,9 +48,36 @@ CREATE INDEX IF NOT EXISTS idx_history_entry    ON password_history(entry_id);
 """
 
 
+def user_data_dir() -> Path:
+    """Vault DB'sinin tutulduğu kullanıcı veri dizini.
+
+    Platform-aware:
+      - Windows: %LOCALAPPDATA%\\Keyora
+      - macOS:   ~/Library/Application Support/Keyora
+      - Linux:   $XDG_DATA_HOME/Keyora (ya da ~/.local/share/Keyora)
+    """
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+        return Path(base) / "Keyora"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "Keyora"
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    return Path(base) / "Keyora"
+
+
 def default_db_path() -> Path:
-    """Veritabanı dosyası için varsayılan yol (proje kökü)."""
-    return Path(__file__).resolve().parent.parent / DB_FILENAME
+    """Vault DB için varsayılan yol.
+
+    Üretimde her zaman kullanıcı veri dizinine yazılır — böylece PyInstaller
+    onefile build'inde geçici dizinde kaybolmaz.
+    KEYORA_DB_PATH ortam değişkeniyle ad-hoc dev kullanımı için ezilebilir.
+    """
+    override = os.environ.get("KEYORA_DB_PATH")
+    if override:
+        return Path(override)
+    data_dir = user_data_dir()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir / DB_FILENAME
 
 
 class Database:

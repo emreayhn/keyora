@@ -1,65 +1,42 @@
-venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-dist/
-build/
-*.db
-*.sqlite
-.env
 
-# Dışa aktarım dosyaları — yanlışlıkla commit edilmesin
-keyora-export*.csv
-*.export.csv
-*.vaultify
-*.vault
-# Virtual Environment
+# Virtual env
 venv/
 .venv/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# Pytest
-.pytest_cache/
-
-# Build files
+# Build artefactları
 dist/
 build/
-*.spec
+# (keyora.spec commit edilir, *.spec genel kuralı yok)
 
-# Database files
+# Local vault DB — ASLA commit ETME
 *.db
 *.sqlite
 *.sqlite3
 
-# Environment files
+# Kullanıcı export dosyaları
+keyora-export*.csv
+*.export.csv
+keyora.db
+# Environment
 .env
 
-# IDE files
+# IDE / OS
 .vscode/
 .idea/
-
-# OS junk
 .DS_Store
 Thumbs.db
 
-# Export files
-keyora-export*.csv
-*.export.csv
-*.vaultify
-*.vaultb
-
-# Logs
+# Loglar / temp
 *.log
-
-# Temporary files
 *.tmp
 *.bak
-# Claude / AI tool files
+
+# Claude / AI araç dosyaları
 .claude/
 claude/
 *.claude
