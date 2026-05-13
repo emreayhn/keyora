@@ -119,8 +119,7 @@ Vault tek bir SQLite dosyasında saklanır:
 | Platform | Konum |
 |---|---|
 | Windows | `%LOCALAPPDATA%\Keyora\keyora.db` (örn. `C:\Users\<sen>\AppData\Local\Keyora\keyora.db`) |
-| macOS | `~/Library/Application Support/Keyora/keyora.db` |
-| Linux | `$XDG_DATA_HOME/Keyora/keyora.db` (ya da `~/.local/share/Keyora/keyora.db`) |
+
 
 - Yedek almak için bu dosyayı kopyalaman yeterli — yine de şifreli durumdadır, master password olmadan açılamaz.
 - Installer ile kaldırıldığında **vault dosyası silinmez**; tam temizlik için yukarıdaki dizini manuel sil.
