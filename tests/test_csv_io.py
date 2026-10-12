@@ -23,7 +23,7 @@ def vault(tmp_path):
 
 
 def test_export_then_import_roundtrip(vault: Vault, tmp_path):
-    cat_id = vault.db.add_category("Work")
+    cat_id = vault.add_category("Work")
     vault.add_entry(VaultEntry(
         id=None, app_name="GitHub", username="ada",
         password="hunter2!@", notes="iş hesabı",
@@ -46,17 +46,18 @@ def test_export_then_import_roundtrip(vault: Vault, tmp_path):
     imported = csv_io.import_csv(v2, csv_path)
     assert imported == 2
 
-    apps = sorted(r["app_name"] for r in v2.db.list_entries())
+    apps = sorted(e.app_name for e in v2.list_entries())
     assert apps == ["GitHub", "Mail"]
 
     # Kategori de yaratılmış olmalı
-    cats = [c["name"] for c in v2.db.list_categories()]
+    cats = [c.name for c in v2.list_categories()]
     assert "Work" in cats
 
     # Şifre roundtrip
-    github = next(r for r in v2.db.list_entries() if r["app_name"] == "GitHub")
-    assert v2.decrypt(github["encrypted_password"]) == "hunter2!@"
-    assert github["favorite"] == 1
+    github = next(e for e in v2.list_entries() if e.app_name == "GitHub")
+    assert v2.reveal_password(github.id) == "hunter2!@"
+    assert github.favorite is True
+    assert github.notes == "iş hesabı"
 
     db2.close()
 

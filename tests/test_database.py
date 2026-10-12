@@ -32,25 +32,25 @@ def test_settings_roundtrip(db: Database):
 
 def test_add_and_list_entry(db: Database):
     entry_id = db.add_entry(
-        app_name="GitHub", username="ada",
+        app_name=b"GitHub", username=b"ada",
         encrypted_password=b"x1", notes=None, category_id=None,
     )
     assert entry_id > 0
     entries = db.list_entries()
     assert len(entries) == 1
-    assert entries[0]["app_name"] == "GitHub"
+    assert entries[0]["app_name"] == b"GitHub"
 
 
 def test_password_history_rotation(db: Database):
     entry_id = db.add_entry(
-        app_name="App", username="u",
+        app_name=b"App", username=b"u",
         encrypted_password=b"v0", notes=None, category_id=None,
     )
     # 7 güncelleme: history sadece en son 5'i tutmalı (HISTORY_LIMIT)
     for i in range(1, 8):
         db.update_entry(
             entry_id,
-            app_name="App", username="u",
+            app_name=b"App", username=b"u",
             encrypted_password=f"v{i}".encode(),
             notes=None, category_id=None, favorite=False,
             password_changed=True,
@@ -60,9 +60,9 @@ def test_password_history_rotation(db: Database):
 
 
 def test_category_delete_sets_entry_null(db: Database):
-    cat_id = db.add_category("Work")
+    cat_id = db.add_category(b"Work")
     entry_id = db.add_entry(
-        app_name="Slack", username="me",
+        app_name=b"Slack", username=b"me",
         encrypted_password=b"e", notes=None, category_id=cat_id,
     )
     db.delete_category(cat_id)
