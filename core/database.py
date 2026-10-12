@@ -376,6 +376,19 @@ class Database:
             (entry_id,),
         ))
 
+    def last_password_changes(self) -> dict[int, str]:
+        """Her kayıt için şifrenin en son değiştiği an (history'deki en yeni satır).
+
+        Hiç değişmemiş kayıtlar sözlükte yer almaz; onlar için created_at geçerlidir.
+        """
+        return {
+            row["entry_id"]: row["last_change"]
+            for row in self._conn.execute(
+                "SELECT entry_id, MAX(changed_at) AS last_change "
+                "FROM password_history GROUP BY entry_id"
+            )
+        }
+
     # ---------- toplu yeniden yazım (rekey / migration) ----------
 
     def iter_all_entries_raw(self) -> list[sqlite3.Row]:
