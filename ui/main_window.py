@@ -22,6 +22,7 @@ from ui.components.entry_card import (
 )
 from ui.entry_dialog import EntryDialog
 from ui.generator_dialog import GeneratorDialog
+from ui.health_dialog import HealthDialog
 from ui.history_dialog import HistoryDialog
 from ui.settings_dialog import SettingsDialog
 from utils.clipboard import copy_to_clipboard
@@ -334,6 +335,11 @@ class MainWindow(QMainWindow):
         act_gen.triggered.connect(self._on_open_generator)
         tools_menu.addAction(act_gen)
 
+        act_health = QAction("Şifre Sağlığı", self)
+        act_health.setShortcut(QKeySequence("Ctrl+H"))
+        act_health.triggered.connect(self._on_open_health)
+        tools_menu.addAction(act_health)
+
         help_menu = menubar.addMenu("&Yardım")
         act_about = QAction("Hakkında", self)
         act_about.triggered.connect(self._on_open_about)
@@ -533,23 +539,25 @@ class MainWindow(QMainWindow):
         if summary:
             HistoryDialog(self.vault, entry_id, summary.app_name, parent=self).exec()
 
-    def _on_card_edit(self, entry_id: int) -> None:
+    def _on_card_edit(self, entry_id: int) -> bool:
+        """Kaydı düzenler; gerçekten güncellendiyse True döner."""
         try:
             current = self.vault.get_entry(entry_id)
         except Exception as exc:
             QMessageBox.critical(self, "Hata", f"Kayıt çözülemedi: {exc}")
-            return
+            return False
         if current is None:
-            return
+            return False
         dialog = EntryDialog(self.vault, entry=current, parent=self)
         if dialog.exec() != EntryDialog.Accepted:
-            return
+            return False
         try:
             self.vault.update_entry(dialog.get_entry())
         except Exception as exc:
             QMessageBox.critical(self, "Hata", f"Güncelleme başarısız: {exc}")
-            return
+            return False
         self._reload_entries()
+        return True
 
     def _on_card_favorite(self, entry_id: int) -> None:
         self.vault.toggle_favorite(entry_id)
@@ -567,6 +575,18 @@ class MainWindow(QMainWindow):
             self._reload_entries()
 
     # ---------- tools / help ----------
+
+    def _on_open_health(self) -> None:
+        dialog = HealthDialog(self.vault, parent=self)
+        if not dialog.loaded:
+            return  # hata kullanıcıya diyalogda gösterildi
+
+        def edit_and_refresh(entry_id: int) -> None:
+            if self._on_card_edit(entry_id) and not self.vault.is_locked:
+                dialog.refresh()
+
+        dialog.edit_requested.connect(edit_and_refresh)
+        dialog.exec()
 
     def _on_open_generator(self) -> None:
         GeneratorDialog(parent=self).exec()
