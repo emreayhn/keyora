@@ -74,8 +74,8 @@ class EntryDialog(QDialog):
 
         self.category_combo = QComboBox()
         self.category_combo.addItem("— Yok —", None)
-        for cat in self.vault.db.list_categories():
-            self.category_combo.addItem(cat["name"], cat["id"])
+        for cat in self.vault.list_categories():
+            self.category_combo.addItem(cat.name, cat.id)
 
         self.notes_edit = QTextEdit()
         self.notes_edit.setFixedHeight(80)

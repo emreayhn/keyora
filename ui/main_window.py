@@ -9,10 +9,11 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit,
     QPushButton, QListWidget, QListWidgetItem, QLabel, QFrame,
     QMessageBox, QInputDialog, QMenu, QStatusBar, QStackedWidget,
-    QScrollArea,
+    QScrollArea, QApplication, QDialog,
 )
 
-from core.vault import Vault, VaultEntry
+from core.vault import Vault
+from utils.win_integration import CaptureGuard
 from ui import icons, theme
 from ui.about_dialog import AboutDialog
 from ui.components.entry_card import (
@@ -32,9 +33,15 @@ COUNTDOWN_TICK_MS = 1000
 class MainWindow(QMainWindow):
     """Vault açıkken görünen ana ekran."""
 
-    def __init__(self, vault: Vault) -> None:
+    def __init__(
+        self,
+        vault: Vault,
+        capture_guard: Optional[CaptureGuard] = None,
+    ) -> None:
         super().__init__()
         self.vault = vault
+        self.capture_guard = capture_guard
+        self._locking = False
         self.setWindowTitle("Keyora")
         self.resize(1000, 640)
 
@@ -47,6 +54,33 @@ class MainWindow(QMainWindow):
         self._setup_auto_lock()
         self._reload_categories()
         self._reload_entries()
+        if self.vault.last_backup_error:
+            self.status.showMessage(f"⚠ {self.vault.last_backup_error}", 15000)
+        if self.vault.just_migrated:
+            self.vault.just_migrated = False
+            QTimer.singleShot(0, self._notify_migration)
+
+    def _notify_migration(self) -> None:
+        """v1→v2 geçişinden sonra düz metin içeren eski yedek hakkında bilgi verir."""
+        olds = self.vault.list_plaintext_backups()
+        if not olds:
+            return
+        answer = QMessageBox.question(
+            self, "Kasa yeni formata taşındı",
+            "Kasanızdaki uygulama adları, kullanıcı adları, notlar ve kategoriler "
+            "artık şifreli.\n\n"
+            "Geçişten önce alınan yedek, Keyora 1.0.0'a geri dönebilmeniz için "
+            "saklandı. Bu yedekte şifreleriniz şifreli, ancak uygulama adları, "
+            "kullanıcı adları ve notlar DÜZ METİN:\n"
+            f"{olds[0].path}\n\n"
+            "Her şeyin yerinde olduğunu kontrol ettiyseniz bu yedeği şimdi "
+            "silmeniz önerilir. Silinsin mi? (Daha sonra Ayarlar → Yedekleme'den "
+            "de silebilirsiniz.)",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if answer == QMessageBox.Yes:
+            count = self.vault.delete_plaintext_backups()
+            self.status.showMessage(f"{count} eski yedek silindi.", 6000)
 
     # ---------- UI ----------
 
@@ -268,9 +302,14 @@ class MainWindow(QMainWindow):
         act_import.triggered.connect(self._on_import_csv)
         file_menu.addAction(act_import)
 
-        act_export = QAction("CSV Dışa Aktar…", self)
+        act_export = QAction("CSV Dışa Aktar (düz metin)…", self)
         act_export.triggered.connect(self._on_export_csv)
         file_menu.addAction(act_export)
+
+        file_menu.addSeparator()
+        act_backup = QAction("Şifreli Yedeği Dışa Aktar…", self)
+        act_backup.triggered.connect(self._on_export_backup)
+        file_menu.addAction(act_backup)
 
         file_menu.addSeparator()
         act_lock = QAction("Kilitle", self)
@@ -340,9 +379,9 @@ class MainWindow(QMainWindow):
 
     def _reload_categories(self) -> None:
         self.category_list.clear()
-        for cat in self.vault.db.list_categories():
-            item = QListWidgetItem(cat["name"])
-            item.setData(Qt.UserRole, cat["id"])
+        for cat in self.vault.list_categories():
+            item = QListWidgetItem(cat.name)
+            item.setData(Qt.UserRole, cat.id)
             self.category_list.addItem(item)
 
     def _clear_cards(self) -> None:
@@ -358,17 +397,17 @@ class MainWindow(QMainWindow):
 
     def _reload_entries(self) -> None:
         self._clear_cards()
-        rows = self.vault.db.list_entries(
+        rows = self.vault.list_entries(
             category_id=self._current_category,
             favorites_only=self._favorites_only,
             search=self._search_text or None,
         )
         for row in rows:
             card = EntryCard(
-                entry_id=row["id"],
-                app_name=row["app_name"],
-                username=row["username"],
-                favorite=bool(row["favorite"]),
+                entry_id=row.id,
+                app_name=row.app_name,
+                username=row.username,
+                favorite=row.favorite,
                 parent=self.cards_container,
             )
             card.reveal_requested.connect(self._on_card_reveal)
@@ -380,7 +419,7 @@ class MainWindow(QMainWindow):
             card.delete_requested.connect(self._on_card_delete)
 
             self.cards_layout.insertWidget(self.cards_layout.count() - 1, card)
-            self._cards[row["id"]] = card
+            self._cards[row.id] = card
 
         self.status.showMessage(f"{len(rows)} kayıt")
         self._update_empty_state(len(rows))
@@ -409,7 +448,7 @@ class MainWindow(QMainWindow):
         if not ok or not name.strip():
             return
         try:
-            self.vault.db.add_category(name.strip())
+            self.vault.add_category(name)
         except Exception as exc:
             QMessageBox.warning(self, "Hata", str(exc))
             return
@@ -429,7 +468,11 @@ class MainWindow(QMainWindow):
                 self, "Yeniden adlandır", "Yeni ad:", text=item.text()
             )
             if ok and new_name.strip():
-                self.vault.db.rename_category(category_id, new_name.strip())
+                try:
+                    self.vault.rename_category(category_id, new_name)
+                except ValueError as exc:
+                    QMessageBox.warning(self, "Hata", str(exc))
+                    return
                 self._reload_categories()
         elif chosen == delete:
             confirm = QMessageBox.question(
@@ -437,7 +480,7 @@ class MainWindow(QMainWindow):
                 f"'{item.text()}' silinsin mi? Kayıtlar 'kategorisiz' olur."
             )
             if confirm == QMessageBox.Yes:
-                self.vault.db.delete_category(category_id)
+                self.vault.delete_category(category_id)
                 self._reload_categories()
                 self._reload_entries()
 
@@ -469,10 +512,12 @@ class MainWindow(QMainWindow):
         self.status.showMessage("Şifre 10 saniye sonra otomatik gizlenir.", 4000)
 
     def _on_card_copy_user(self, entry_id: int) -> None:
-        row = self.vault.db.get_entry(entry_id)
-        if not row:
+        try:
+            username = self.vault.reveal_username(entry_id)
+        except Exception as exc:
+            QMessageBox.critical(self, "Hata", str(exc))
             return
-        copy_to_clipboard(row["username"])
+        copy_to_clipboard(username)
         self.status.showMessage("Kullanıcı adı panoya kopyalandı.", 5000)
 
     def _on_card_copy_pw(self, entry_id: int) -> None:
@@ -484,29 +529,18 @@ class MainWindow(QMainWindow):
         self.status.showMessage("Şifre 20 saniyeliğine panoya kopyalandı.", 5000)
 
     def _on_card_history(self, entry_id: int) -> None:
-        row = self.vault.db.get_entry(entry_id)
-        if row:
-            HistoryDialog(self.vault, entry_id, row["app_name"], parent=self).exec()
+        summary = self.vault.get_summary(entry_id)
+        if summary:
+            HistoryDialog(self.vault, entry_id, summary.app_name, parent=self).exec()
 
     def _on_card_edit(self, entry_id: int) -> None:
-        row = self.vault.db.get_entry(entry_id)
-        if row is None:
-            return
         try:
-            plain_pw = self.vault.decrypt(row["encrypted_password"])
+            current = self.vault.get_entry(entry_id)
         except Exception as exc:
-            QMessageBox.critical(self, "Hata", f"Şifre çözülemedi: {exc}")
+            QMessageBox.critical(self, "Hata", f"Kayıt çözülemedi: {exc}")
             return
-
-        current = VaultEntry(
-            id=row["id"],
-            app_name=row["app_name"],
-            username=row["username"],
-            password=plain_pw,
-            notes=row["notes"],
-            category_id=row["category_id"],
-            favorite=bool(row["favorite"]),
-        )
+        if current is None:
+            return
         dialog = EntryDialog(self.vault, entry=current, parent=self)
         if dialog.exec() != EntryDialog.Accepted:
             return
@@ -518,18 +552,18 @@ class MainWindow(QMainWindow):
         self._reload_entries()
 
     def _on_card_favorite(self, entry_id: int) -> None:
-        self.vault.db.toggle_favorite(entry_id)
+        self.vault.toggle_favorite(entry_id)
         self._reload_entries()
 
     def _on_card_delete(self, entry_id: int) -> None:
-        row = self.vault.db.get_entry(entry_id)
-        name = row["app_name"] if row else ""
+        summary = self.vault.get_summary(entry_id)
+        name = summary.app_name if summary else ""
         confirm = QMessageBox.question(
             self, "Sil",
             f"'{name}' silinsin mi? Bu işlem geri alınamaz.",
         )
         if confirm == QMessageBox.Yes:
-            self.vault.db.delete_entry(entry_id)
+            self.vault.delete_entry(entry_id)
             self._reload_entries()
 
     # ---------- tools / help ----------
@@ -546,7 +580,22 @@ class MainWindow(QMainWindow):
         dialog = SettingsDialog(self.vault, parent=self)
         dialog.settings_changed.connect(self._refresh_auto_lock)
         dialog.theme_changed.connect(self.apply_theme)
+        dialog.capture_setting_changed.connect(self._on_capture_setting_changed)
+        dialog.vault_restored.connect(self._on_vault_restored)
         dialog.exec()
+
+    def _on_capture_setting_changed(self, enabled: bool) -> None:
+        if self.capture_guard is None:
+            return
+        self.capture_guard.enabled = enabled
+        self.capture_guard.apply_to(QApplication.topLevelWidgets())
+
+    def _on_vault_restored(self) -> None:
+        QMessageBox.information(
+            self, "Geri yüklendi",
+            "Yedek geri yüklendi. Yedeğin master password'ü ile tekrar giriş yapın.",
+        )
+        self.lock_now()
 
     def _refresh_auto_lock(self) -> None:
         self._auto_lock_seconds_total = self.vault.get_auto_lock_minutes() * 60
@@ -627,6 +676,46 @@ class MainWindow(QMainWindow):
     # ---------- lock ----------
 
     def _on_lock(self) -> None:
+        self.lock_now()
+
+    def lock_now(self) -> None:
+        """Kasayı kilitler: açık diyalogları kapatır, pencereyi kapatır.
+
+        Auto-lock, Ctrl+L ve Windows oturum kilidi/uyku bildirimleri buraya gelir.
+        """
+        if self._locking:
+            return
+        self._locking = True
         self._tick_timer.stop()
-        self.vault.lock()
-        self.close()
+        try:
+            # Açık diyaloglarda (düzenleme, geçmiş…) çözülmüş veri kalmasın
+            for widget in QApplication.topLevelWidgets():
+                if isinstance(widget, QDialog) and widget.isVisible():
+                    widget.reject()
+            self._clear_cards()
+            self.vault.lock()
+        finally:
+            # Ne olursa olsun pencere kapanır; kilit ekranına dönülür
+            self.close()
+
+    # ---------- encrypted backup ----------
+
+    def _on_export_backup(self) -> None:
+        from datetime import date
+        from pathlib import Path
+        from PySide6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Şifreli yedeği kaydet",
+            f"keyora-yedek-{date.today():%Y%m%d}.db", "Keyora yedeği (*.db)",
+        )
+        if not path:
+            return
+        try:
+            self.vault.export_backup(Path(path))
+        except Exception as exc:
+            QMessageBox.critical(self, "Hata", f"Yedek yazılamadı: {exc}")
+            return
+        QMessageBox.information(
+            self, "Tamam",
+            "Şifreli yedek kaydedildi. Açmak için şu anki master password gerekir.",
+        )
