@@ -24,7 +24,7 @@ from ui.entry_dialog import EntryDialog
 from ui.generator_dialog import GeneratorDialog
 from ui.history_dialog import HistoryDialog
 from ui.settings_dialog import SettingsDialog
-from utils.clipboard import copy_to_clipboard
+from utils.clipboard import clear_pending_secret, copy_to_clipboard
 from utils import csv_io
 
 COUNTDOWN_TICK_MS = 1000
@@ -693,6 +693,7 @@ class MainWindow(QMainWindow):
                 if isinstance(widget, QDialog) and widget.isVisible():
                     widget.reject()
             self._clear_cards()
+            clear_pending_secret()  # kopyalanmış şifre panoda kalmasın
             self.vault.lock()
         finally:
             # Ne olursa olsun pencere kapanır; kilit ekranına dönülür
