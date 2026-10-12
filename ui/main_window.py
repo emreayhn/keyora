@@ -18,7 +18,7 @@ from ui import icons, theme
 from ui.about_dialog import AboutDialog
 from ui.components.entry_card import (
     EntryCard,
-    COL_FAV_W, COL_APP_STR, COL_USER_STR, COL_PW_STR, COL_ACTION_W,
+    COL_FAV_W, COL_APP_STR, COL_USER_STR, COL_PW_STR, COL_ACTION_W, ACTION_COUNT,
 )
 from ui.entry_dialog import EntryDialog
 from ui.generator_dialog import GeneratorDialog
@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         # Aksiyon kolonları — sağa hizalı tek "Eylemler" etiketi
         actions_l = QLabel("Eylemler")
         actions_l.setAlignment(Qt.AlignCenter)
-        actions_l.setFixedWidth(COL_ACTION_W * 3 + 20)
+        actions_l.setFixedWidth(COL_ACTION_W * ACTION_COUNT + 10 * (ACTION_COUNT - 1))
         row.addWidget(actions_l)
         return header
 
@@ -484,7 +484,8 @@ class MainWindow(QMainWindow):
         elif chosen == delete:
             confirm = QMessageBox.question(
                 self, "Sil",
-                f"'{item.text()}' silinsin mi? Kayıtlar 'kategorisiz' olur."
+                f"'{item.text()}' silinsin mi? Kayıtlar 'kategorisiz' olur.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
             )
             if confirm == QMessageBox.Yes:
                 self.vault.delete_category(category_id)
@@ -570,6 +571,7 @@ class MainWindow(QMainWindow):
         confirm = QMessageBox.question(
             self, "Sil",
             f"'{name}' silinsin mi? Bu işlem geri alınamaz.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,  # Enter silmesin
         )
         if confirm == QMessageBox.Yes:
             self.vault.delete_entry(entry_id)

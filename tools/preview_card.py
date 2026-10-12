@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 from ui import icons, theme
 from ui.components.entry_card import (
-    EntryCard, COL_ACTION_W, COL_APP_STR, COL_FAV_W, COL_PW_STR, COL_USER_STR,
+    EntryCard, ACTION_COUNT, COL_ACTION_W, COL_APP_STR, COL_FAV_W, COL_PW_STR, COL_USER_STR,
 )
 
 
@@ -36,7 +36,7 @@ def _make_header() -> QWidget:
     row.addWidget(QLabel("KULLANICI ADI"), COL_USER_STR)
     row.addWidget(QLabel("ŞİFRE"), COL_PW_STR)
     acts = QLabel("EYLEMLER"); acts.setAlignment(Qt.AlignCenter)
-    acts.setFixedWidth(COL_ACTION_W * 3 + 20)
+    acts.setFixedWidth(COL_ACTION_W * ACTION_COUNT + 10 * (ACTION_COUNT - 1))
     row.addWidget(acts)
     return header
 

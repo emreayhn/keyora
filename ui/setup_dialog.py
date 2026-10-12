@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.vault import Vault
+from ui.components.window import as_minimizable_window
 
 MIN_MASTER_LENGTH = 8
 
@@ -19,6 +20,7 @@ class SetupDialog(QDialog):
         super().__init__(parent)
         self.vault = vault
         self.setWindowTitle("Keyora — İlk Kurulum")
+        as_minimizable_window(self)
         self.setMinimumWidth(420)
         self._build_ui()
 

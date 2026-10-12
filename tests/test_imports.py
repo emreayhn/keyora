@@ -17,7 +17,7 @@ MODULES = [
     "ui.main_window", "ui.login_dialog", "ui.setup_dialog", "ui.settings_dialog",
     "ui.entry_dialog", "ui.history_dialog", "ui.generator_dialog", "ui.about_dialog",
     "ui.health_dialog", "ui.import_dialog",
-    "ui.components.entry_card",
+    "ui.components.entry_card", "ui.components.window",
 ]
 
 

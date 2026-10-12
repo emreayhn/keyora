@@ -11,6 +11,7 @@ from core.vault import (
     Vault, InvalidMasterPassword, LoginThrottled,
     UnsupportedVaultVersion, VaultCorrupted,
 )
+from ui.components.window import as_minimizable_window
 
 
 class LoginDialog(QDialog):
@@ -20,6 +21,7 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.vault = vault
         self.setWindowTitle("Keyora — Giriş")
+        as_minimizable_window(self)
         self.setMinimumWidth(380)
         self._build_ui()
 
