@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import unicodedata
 import sqlite3
 import time
 from dataclasses import dataclass
@@ -48,6 +49,17 @@ class UnsupportedVaultVersion(RuntimeError):
 
 class VaultCorrupted(RuntimeError):
     """Parola doğru ama kasa verisi çözülemiyor (bozuk veya değiştirilmiş)."""
+
+
+def fold(text: str) -> str:
+    """Türkçe uyumlu büyük/küçük harf duyarsız karşılaştırma anahtarı.
+
+    str.casefold() 'İ' harfini 'i' yerine 'i̇' (i + nokta) yapar; bu yüzden
+    'İş' ile 'iş' eşleşmez. Burada İ, I ve ı hepsi 'i' sayılır — arama ve
+    tekillik için biraz daha hoşgörülü ama Türkçe ve İngilizce adlarda doğru.
+    """
+    text = unicodedata.normalize("NFC", text)
+    return text.replace("İ", "i").replace("I", "i").replace("ı", "i").casefold()
 
 
 @dataclass
@@ -374,12 +386,12 @@ class Vault:
         rows = self.db.list_entries(category_id=category_id, favorites_only=favorites_only)
         items = [self._summary(r) for r in rows]
         if search:
-            needle = search.casefold()
+            needle = fold(search)
             items = [
                 e for e in items
-                if needle in e.app_name.casefold() or needle in e.username.casefold()
+                if needle in fold(e.app_name) or needle in fold(e.username)
             ]
-        items.sort(key=lambda e: (not e.favorite, e.app_name.casefold(), e.id))
+        items.sort(key=lambda e: (not e.favorite, fold(e.app_name), e.id))
         return items
 
     def get_summary(self, entry_id: int) -> Optional[EntrySummary]:
@@ -412,6 +424,42 @@ class Vault:
             notes=self._encrypt_opt(entry.notes),
             category_id=entry.category_id,
             favorite=entry.favorite,
+        )
+
+    def import_entries(self, items: list[tuple[VaultEntry, Optional[str]]]) -> int:
+        """Çok sayıda kaydı tek transaction'da ekler (içe aktarma).
+
+        Her öğe (kayıt, kategori adı) çiftidir; kategori adı mevcut bir
+        kategoriyle büyük/küçük harf duyarsız eşleşirse ona bağlanır, yoksa
+        oluşturulur. Hata olursa hiçbir kayıt ya da kategori eklenmez.
+        """
+        existing = {fold(c.name): c.id for c in self.list_categories()}
+        new_names: list[str] = []
+        new_index: dict[str, int] = {}
+        rows = []
+        for entry, category_name in items:
+            category_id, new_idx = entry.category_id, None
+            name = (category_name or "").strip()
+            if name:
+                key = fold(name)
+                if key in existing:
+                    category_id = existing[key]
+                else:
+                    if key not in new_index:
+                        new_index[key] = len(new_names)
+                        new_names.append(name)
+                    category_id, new_idx = None, new_index[key]
+            rows.append((
+                self.encrypt(entry.app_name),
+                self.encrypt(entry.username),
+                self.encrypt(entry.password),
+                self._encrypt_opt(entry.notes),
+                category_id,
+                new_idx,
+                entry.favorite,
+            ))
+        return self.db.add_bulk(
+            new_categories=[self.encrypt(n) for n in new_names], entries=rows
         )
 
     def update_entry(self, entry: VaultEntry) -> None:
@@ -481,7 +529,7 @@ class Vault:
         """Çözülmüş kategoriler, ada göre sıralı."""
         cats = [Category(id=c["id"], name=self.decrypt(c["name"]))
                 for c in self.db.list_categories()]
-        cats.sort(key=lambda c: (c.name.casefold(), c.id))
+        cats.sort(key=lambda c: (fold(c.name), c.id))
         return cats
 
     def _validate_category_name(self, name: str, exclude_id: Optional[int] = None) -> str:
@@ -489,7 +537,7 @@ class Vault:
         if not name:
             raise ValueError("Kategori adı boş olamaz")
         for cat in self.list_categories():
-            if cat.id != exclude_id and cat.name.casefold() == name.casefold():
+            if cat.id != exclude_id and fold(cat.name) == fold(name):
                 raise ValueError(f"'{name}' adında bir kategori zaten var")
         return name
 

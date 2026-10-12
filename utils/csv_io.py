@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from core.vault import Vault, VaultEntry
+from core.vault import Vault
 
 CSV_HEADERS = ["app_name", "username", "password", "category", "notes", "favorite"]
 
@@ -34,44 +34,11 @@ def export_csv(vault: Vault, path: str | Path) -> int:
 
 
 def import_csv(vault: Vault, path: str | Path) -> int:
-    """CSV'den kayıt yükler. Kategoriler gerektiğinde oluşturulur."""
-    if vault.is_locked:
-        raise RuntimeError("Vault kilitli")
+    """CSV'den kayıt yükler (Keyora ya da desteklenen başka bir biçim).
 
-    existing_categories = {c.name.casefold(): c.id for c in vault.list_categories()}
-    count = 0
+    Ayrıntılı akış ve önizleme için utils/importers.py kullanılır; bu fonksiyon
+    geriye dönük uyumluluk için doğrudan içe aktarır ve eklenen sayıyı döner.
+    """
+    from utils import importers
 
-    with open(path, "r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        missing = [h for h in ("app_name", "username", "password") if h not in (reader.fieldnames or [])]
-        if missing:
-            raise ValueError(f"CSV başlıkları eksik: {', '.join(missing)}")
-
-        for raw in reader:
-            app_name = (raw.get("app_name") or "").strip()
-            username = (raw.get("username") or "").strip()
-            password = raw.get("password") or ""
-            if not app_name or not username or not password:
-                continue
-
-            cat_name = (raw.get("category") or "").strip()
-            category_id: int | None = None
-            if cat_name:
-                key = cat_name.casefold()
-                if key not in existing_categories:
-                    existing_categories[key] = vault.add_category(cat_name)
-                category_id = existing_categories[key]
-
-            entry = VaultEntry(
-                id=None,
-                app_name=app_name,
-                username=username,
-                password=password,
-                notes=(raw.get("notes") or "").strip() or None,
-                category_id=category_id,
-                favorite=(raw.get("favorite") or "").strip() in {"1", "true", "True"},
-            )
-            vault.add_entry(entry)
-            count += 1
-
-    return count
+    return importers.apply(vault, importers.preview(vault, path))

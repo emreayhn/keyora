@@ -127,6 +127,16 @@ def test_category_names_must_be_unique_case_insensitive(vault: Vault):
         vault.add_category("   ")
 
 
+def test_turkish_dotted_i_matches_in_categories_and_search(vault: Vault):
+    vault.add_category("İş")
+    with pytest.raises(ValueError):
+        vault.add_category("iş")  # casefold() bunu farklı sayıyordu
+    _add(vault, "İstanbul Kart")
+    _add(vault, "IKEA")
+    assert [e.app_name for e in vault.list_entries(search="istanbul")] == ["İstanbul Kart"]
+    assert [e.app_name for e in vault.list_entries(search="ikea")] == ["IKEA"]
+
+
 def test_rename_category(vault: Vault):
     a = vault.add_category("A")
     vault.add_category("B")

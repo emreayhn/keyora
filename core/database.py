@@ -94,6 +94,10 @@ class DatabaseError(RuntimeError):
 EntryCipherRow = tuple[int, bytes, bytes, bytes, Optional[bytes]]
 """(id, app_name, username, encrypted_password, notes) — hepsi şifreli."""
 
+BulkEntry = tuple[bytes, bytes, bytes, Optional[bytes], Optional[int], Optional[int], bool]
+"""(app_name, username, encrypted_password, notes, category_id,
+new_category_index, favorite) — metin alanları şifreli."""
+
 
 def _open_readonly(path: Path) -> sqlite3.Connection:
     """Dosyayı salt okunur açar — yedeği incelerken yanlışlıkla değiştirmemek için."""
@@ -252,6 +256,38 @@ class Database:
             f"FROM vault_entries {where}"
         )
         return list(self._conn.execute(sql, params))
+
+    def add_bulk(
+        self,
+        *,
+        new_categories: list[bytes],
+        entries: list[BulkEntry],
+    ) -> int:
+        """Yeni kategorileri ve kayıtları TEK transaction'da ekler (içe aktarma).
+
+        Kayıt, mevcut bir kategoriye `category_id` ile ya da bu çağrıda
+        oluşturulan bir kategoriye `new_category_index` ile bağlanır. Herhangi
+        bir satırda hata olursa hiçbir şey yazılmaz. Eklenen kayıt sayısını döner.
+        """
+        with self.transaction() as conn:
+            created_ids = [
+                conn.execute("INSERT INTO categories(name) VALUES (?)", (name,)).lastrowid
+                for name in new_categories
+            ]
+            conn.executemany(
+                "INSERT INTO vault_entries(app_name, username, encrypted_password, "
+                "                          notes, category_id, favorite) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        app, user, pw, notes,
+                        created_ids[new_idx] if new_idx is not None else cat_id,
+                        1 if favorite else 0,
+                    )
+                    for app, user, pw, notes, cat_id, new_idx, favorite in entries
+                ],
+            )
+        return len(entries)
 
     def get_entry(self, entry_id: int) -> Optional[sqlite3.Row]:
         """Tek kayıt (şifreli alanlarla), yoksa None."""

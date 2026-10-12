@@ -24,6 +24,7 @@ from ui.entry_dialog import EntryDialog
 from ui.generator_dialog import GeneratorDialog
 from ui.health_dialog import HealthDialog
 from ui.history_dialog import HistoryDialog
+from ui.import_dialog import ImportDialog
 from ui.settings_dialog import SettingsDialog
 from utils.clipboard import clear_pending_secret, copy_to_clipboard
 from utils import csv_io
@@ -299,8 +300,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_settings)
 
         file_menu.addSeparator()
-        act_import = QAction("CSV İçe Aktar…", self)
-        act_import.triggered.connect(self._on_import_csv)
+        act_import = QAction("İçe Aktar (Chrome, Bitwarden, KeePass…)…", self)
+        act_import.triggered.connect(self._on_import)
         file_menu.addAction(act_import)
 
         act_export = QAction("CSV Dışa Aktar (düz metin)…", self)
@@ -676,22 +677,17 @@ class MainWindow(QMainWindow):
             return
         QMessageBox.information(self, "Tamam", f"{count} kayıt dışa aktarıldı.")
 
-    def _on_import_csv(self) -> None:
-        from PySide6.QtWidgets import QFileDialog
-        path, _ = QFileDialog.getOpenFileName(
-            self, "CSV dosyası seç", "", "CSV (*.csv)"
-        )
-        if not path:
-            return
-
-        try:
-            count = csv_io.import_csv(self.vault, path)
-        except Exception as exc:
-            QMessageBox.critical(self, "Hata", f"İçe aktarım başarısız: {exc}")
-            return
-        self._reload_categories()
-        self._reload_entries()
-        QMessageBox.information(self, "Tamam", f"{count} kayıt içe aktarıldı.")
+    def _on_import(self) -> None:
+        dialog = ImportDialog(self.vault, parent=self)
+        accepted = dialog.exec() == ImportDialog.Accepted
+        count = dialog.imported_count
+        dialog.deleteLater()  # her açılışta diyalog birikmesin
+        if self.vault.is_locked:
+            return  # içe aktarma sırasında kilitlendi; pencere kapanıyor
+        if accepted or count:
+            self._reload_categories()
+            self._reload_entries()
+            self.status.showMessage(f"{count} kayıt içe aktarıldı.", 6000)
 
     # ---------- lock ----------
 
