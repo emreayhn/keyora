@@ -80,6 +80,11 @@ def stylesheet() -> str:
         font-family: 'Segoe UI', sans-serif;
         font-size: 13px;
     }}
+    /* Metin widget'ları bulundukları yüzeyin rengini alsın: yoksa panel ve
+       kartların içinde bg_primary renginde "kutu" gibi görünürler. */
+    QLabel, QCheckBox, QRadioButton {{
+        background-color: transparent;
+    }}
     QFrame#Card, QFrame#Panel {{
         background-color: {c['bg_secondary']};
         border-radius: 8px;

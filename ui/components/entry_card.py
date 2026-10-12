@@ -6,7 +6,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QToolButton, QWidget,
+    QFrame, QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget,
 )
 
 from ui import icons, theme
@@ -20,10 +20,15 @@ COL_APP_STR    = 3
 COL_USER_STR   = 4
 COL_PW_STR     = 4
 COL_ACTION_W   = 36
+ACTION_COUNT   = 2   # düzenle + "⋯" (geçmiş ve sil menüde)
+BADGE_SIZE     = 28
 
 
 class EntryCard(QFrame):
-    """Tek satırlık kayıt kartı — favori, app, kullanıcı, şifre, geçmiş, düzenle, sil."""
+    """Tek satırlık kayıt kartı — favori, rozet + ad, kullanıcı, şifre, düzenle, ⋯.
+
+    Sil satırda doğrudan durmaz: yanlışlıkla tıklanmasın diye "⋯" menüsündedir.
+    """
 
     reveal_requested        = Signal(int)
     copy_username_requested = Signal(int)
@@ -107,13 +112,26 @@ class EntryCard(QFrame):
         self.fav_btn.clicked.connect(lambda: self.favorite_requested.emit(self.entry_id))
         outer.addWidget(self.fav_btn)
 
-        # 2) Uygulama adı
+        # 2) Uygulama adı — baş harf rozeti + kalın başlık (giriş kutusu değil)
+        app_box = QWidget()
+        app_box.setObjectName("AppBox")
+        app_box.setStyleSheet("QWidget#AppBox { background: transparent; }")
+        app_row = QHBoxLayout(app_box)
+        app_row.setContentsMargins(0, 0, 0, 0)
+        app_row.setSpacing(10)
+        self.badge = QLabel()
+        self.badge.setPixmap(icons.initial_badge(app_name, BADGE_SIZE))
+        self.badge.setFixedSize(BADGE_SIZE, BADGE_SIZE)
         self.app_label = QLabel(app_name)
         self.app_label.setStyleSheet(
-            f"color: {c['text_primary']}; font-size: 14px; font-weight: 600; padding-left: 4px;"
+            f"color: {c['text_primary']}; font-size: 14px; font-weight: 600;"
         )
-        self.app_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        outer.addWidget(self.app_label, COL_APP_STR)
+        self.app_label.setToolTip(app_name)
+        self.app_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        app_row.addWidget(self.badge)
+        app_row.addWidget(self.app_label, 1)
+        app_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        outer.addWidget(app_box, COL_APP_STR)
 
         # 3) Kullanıcı adı — read-only QLineEdit + sağ kenarda kopya ikonu
         self.user_field = QLineEdit(username)
@@ -156,23 +174,29 @@ class EntryCard(QFrame):
         self.pw_field.addAction(self.copy_pw_action, QLineEdit.TrailingPosition)
         outer.addWidget(self.pw_field, COL_PW_STR)
 
-        # 5-6-7) Geçmiş / Düzenle / Sil — sadece ikon
-        self.history_btn = self._icon_button(
-            icons.clipboard_history_icon(20), "Şifre geçmişi (son 5)",
-            lambda: self.history_requested.emit(self.entry_id),
-        )
+        # 5) Düzenle  6) "⋯" — geçmiş ve sil burada (sil en altta, ayraçla ayrı)
         self.edit_btn = self._icon_button(
             icons.pencil_icon(20), "Düzenle",
             lambda: self.edit_requested.emit(self.entry_id),
         )
-        self.delete_btn = self._icon_button(
-            icons.trash_icon(20), "Sil",
+        self.more_btn = self._icon_button(icons.more_icon(20), "Diğer işlemler", None)
+        self.more_btn.setPopupMode(QToolButton.InstantPopup)
+        self.more_btn.setStyleSheet("QToolButton::menu-indicator { image: none; }")
+        menu = QMenu(self.more_btn)
+        menu.addAction(
+            icons.history_icon(16), "Şifre geçmişi (son 5)",
+            lambda: self.history_requested.emit(self.entry_id),
+        )
+        menu.addSeparator()
+        delete_action = menu.addAction(
+            icons.trash_icon(16), "Sil…",
             lambda: self.delete_requested.emit(self.entry_id),
         )
+        delete_action.setToolTip("Kaydı ve geçmişini kalıcı olarak siler")
+        self.more_btn.setMenu(menu)
 
-        outer.addWidget(self.history_btn)
         outer.addWidget(self.edit_btn)
-        outer.addWidget(self.delete_btn)
+        outer.addWidget(self.more_btn)
 
     def _icon_button(self, icon, tooltip: str, on_click) -> QToolButton:
         btn = QToolButton()
@@ -180,7 +204,8 @@ class EntryCard(QFrame):
         btn.setToolTip(tooltip)
         btn.setFixedSize(COL_ACTION_W, 32)
         btn.setCursor(Qt.PointingHandCursor)
-        btn.clicked.connect(on_click)
+        if on_click is not None:
+            btn.clicked.connect(on_click)
         return btn
 
     # ---------- reveal ----------

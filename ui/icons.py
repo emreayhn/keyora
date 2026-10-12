@@ -46,7 +46,7 @@ def _stroke(color: str, size: int, ratio: float = 0.10) -> QPen:
 
 def clear_cache() -> None:
     """Tema değişince ikonların palet-bağımlı cache'lerini boşaltır."""
-    for fn in (copy_icon, eye_icon, eye_off_icon, clipboard_history_icon,
+    for fn in (copy_icon, eye_icon, eye_off_icon, history_icon, more_icon,
                pencil_icon, trash_icon, star_icon, plus_icon, lock_icon):
         fn.cache_clear()
 
@@ -112,44 +112,130 @@ def eye_off_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
 
 
 @lru_cache(maxsize=64)
-def clipboard_history_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
+def history_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
+    """Geriye dönen oklu saat — 'şifre geçmişi'."""
     color = _resolve(color, "text_muted")
     pm = _new_pixmap(size)
     p = _painter(pm)
     s = size
     p.setPen(_stroke(color, size, 0.09))
     p.setBrush(Qt.NoBrush)
-    p.drawRoundedRect(s * 0.22, s * 0.20, s * 0.56, s * 0.70, s * 0.07, s * 0.07)
-    p.setBrush(QBrush(QColor(color)))
-    p.drawRoundedRect(s * 0.36, s * 0.10, s * 0.28, s * 0.16, s * 0.04, s * 0.04)
-    p.setBrush(Qt.NoBrush)
-    p.setPen(_stroke(color, size, 0.08))
-    for y in (0.42, 0.56, 0.70):
-        p.drawLine(QPointF(s * 0.32, s * y), QPointF(s * 0.68, s * y))
+    # Saat kadranı: sol üstte ok için boşluk bırakan yay
+    p.drawArc(int(s * 0.16), int(s * 0.16), int(s * 0.68), int(s * 0.68), 140 * 16, -300 * 16)
+    # Yayın ucundaki ok başı (saat yönünün tersine)
+    arrow = QPainterPath()
+    arrow.moveTo(s * 0.10, s * 0.22)
+    arrow.lineTo(s * 0.21, s * 0.36)
+    arrow.lineTo(s * 0.36, s * 0.27)
+    p.drawPath(arrow)
+    # Akrep ve yelkovan
+    p.drawLine(QPointF(s * 0.50, s * 0.50), QPointF(s * 0.50, s * 0.32))
+    p.drawLine(QPointF(s * 0.50, s * 0.50), QPointF(s * 0.63, s * 0.60))
     p.end()
     return QIcon(pm)
 
 
 @lru_cache(maxsize=64)
 def pencil_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
+    """Gövdesi, ucu ve silgisi olan eğik kalem — 'düzenle'."""
     color = _resolve(color, "text_muted")
     pm = _new_pixmap(size)
     p = _painter(pm)
-    p.setPen(_stroke(color, size, 0.10))
-    p.setBrush(Qt.NoBrush)
     s = size
-    p.drawLine(QPointF(s * 0.22, s * 0.78), QPointF(s * 0.74, s * 0.26))
-    p.drawLine(QPointF(s * 0.22, s * 0.78), QPointF(s * 0.14, s * 0.86))
+    p.translate(s * 0.5, s * 0.5)
+    p.rotate(45)
+    pen = _stroke(color, size, 0.08)
+    p.setPen(pen)
+    p.setBrush(Qt.NoBrush)
+    w, half = s * 0.22, s * 0.11
+    # Gövde (dikdörtgen) ve silgi ayrımı
+    p.drawRect(-half, -s * 0.40, w, s * 0.58)
+    p.drawLine(QPointF(-half, -s * 0.27), QPointF(half, -s * 0.27))
+    # Uç (üçgen) ve grafit ucu
+    tip = QPainterPath()
+    tip.moveTo(-half, s * 0.18)
+    tip.lineTo(0, s * 0.40)
+    tip.lineTo(half, s * 0.18)
+    p.drawPath(tip)
     p.setPen(Qt.NoPen)
     p.setBrush(QBrush(QColor(color)))
-    path = QPainterPath()
-    path.moveTo(s * 0.66, s * 0.18)
-    path.lineTo(s * 0.86, s * 0.14)
-    path.lineTo(s * 0.82, s * 0.34)
-    path.closeSubpath()
-    p.drawPath(path)
+    lead = QPainterPath()
+    lead.moveTo(-s * 0.04, s * 0.31)
+    lead.lineTo(0, s * 0.40)
+    lead.lineTo(s * 0.04, s * 0.31)
+    lead.closeSubpath()
+    p.drawPath(lead)
     p.end()
     return QIcon(pm)
+
+
+@lru_cache(maxsize=64)
+def more_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
+    """Yatay üç nokta — 'diğer işlemler' menüsü."""
+    color = _resolve(color, "text_muted")
+    pm = _new_pixmap(size)
+    p = _painter(pm)
+    s = size
+    p.setPen(Qt.NoPen)
+    p.setBrush(QBrush(QColor(color)))
+    r = s * 0.085
+    for x in (0.24, 0.50, 0.76):
+        p.drawEllipse(QPointF(s * x, s * 0.50), r, r)
+    p.end()
+    return QIcon(pm)
+
+
+# Rozet renkleri: iki temada da okunabilen pastel tonlar (üstüne koyu metin)
+BADGE_COLORS = (
+    "#F4A6B8", "#F7C59F", "#F3DE8A", "#B5E2B0", "#9ED8DB",
+    "#A7C7F2", "#C3B1E1", "#E8B4D8", "#D4C4A8", "#B8D8BA",
+)
+BADGE_TEXT = "#1F1D2E"
+
+
+def badge_letter(name: str) -> str:
+    """Rozetteki harf — Türkçe büyük harf kuralıyla (i → İ, ı → I)."""
+    for ch in name.strip():
+        if ch.isalnum():
+            return {"i": "İ", "ı": "I"}.get(ch, ch.upper())
+    return "#"
+
+
+def badge_color(name: str) -> str:
+    """Ada göre sabit renk: aynı kayıt her açılışta aynı renkte görünür.
+
+    hash() oturumdan oturuma değiştiği için kullanılmaz; karakter kodlarının
+    basit, deterministik bir toplamı alınır.
+    """
+    key = name.strip().lower()
+    total = sum((i + 1) * ord(ch) for i, ch in enumerate(key))
+    return BADGE_COLORS[total % len(BADGE_COLORS)]
+
+
+def initial_badge(name: str, size: int = 28) -> QPixmap:
+    """Kaydın baş harfiyle renkli yuvarlak rozet — ağ gerektirmeyen görsel kimlik.
+
+    Bilerek önbelleksiz: uygulama adı (kasada şifreli) önbellek anahtarı olarak
+    kilitten sonra da bellekte kalmasın. Önbellek yalnızca harf + renk tutar.
+    """
+    return _badge_pixmap(badge_letter(name), badge_color(name), size)
+
+
+@lru_cache(maxsize=512)
+def _badge_pixmap(letter: str, color: str, size: int) -> QPixmap:
+    pm = _new_pixmap(size)
+    p = _painter(pm)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QBrush(QColor(color)))
+    p.drawEllipse(0, 0, size, size)
+    font = p.font()
+    font.setBold(True)
+    font.setPixelSize(int(size * 0.48))
+    p.setFont(font)
+    p.setPen(QColor(BADGE_TEXT))
+    p.drawText(pm.rect(), Qt.AlignCenter, letter)
+    p.end()
+    return pm
 
 
 @lru_cache(maxsize=64)
