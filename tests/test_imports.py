@@ -12,10 +12,10 @@ import pytest
 MODULES = [
     "main",
     "core.crypto", "core.database", "core.vault", "core.backup",
-    "utils.clipboard", "utils.csv_io", "utils.password_gen", "utils.win_integration",
+    "utils.clipboard", "utils.csv_io", "utils.password_gen", "utils.win_integration", "utils.importers",
     "ui.main_window", "ui.login_dialog", "ui.setup_dialog", "ui.settings_dialog",
     "ui.entry_dialog", "ui.history_dialog", "ui.generator_dialog", "ui.about_dialog",
-    "ui.components.entry_card",
+    "ui.import_dialog", "ui.components.entry_card",
 ]
 
 
