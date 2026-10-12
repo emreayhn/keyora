@@ -16,6 +16,7 @@ from ui import theme
 from ui.login_dialog import LoginDialog
 from ui.setup_dialog import SetupDialog
 from ui.main_window import MainWindow
+from utils.clipboard import clear_pending_secret
 from utils.win_integration import CaptureGuard, SessionLockFilter
 
 
@@ -124,6 +125,7 @@ def main() -> int:
 
         if vault.is_locked:
             continue
+        clear_pending_secret()  # önce pano: 20 sn dolmadan çıkılsa da şifre kalmasın
         vault.lock()  # çıkışta da anahtarı düşür; değişiklik varsa yedekle
         db.close()
         return 0
