@@ -210,3 +210,24 @@ def test_lock_clears_category_names(window, qapp):
     assert window._category_names
     window.lock_now()
     assert window._category_names == {} and window._rows == []
+
+
+def test_card_shows_category_column_and_updates_on_rename(window, qapp):
+    vault = window.vault
+    cat = vault.add_category("Eğlence")
+    netflix = next(r for r in window._rows if r.app_name == "Netflix")
+    entry = vault.get_entry(netflix.id)
+    entry.category_id = cat
+    vault.update_entry(entry)
+    window._reload_categories()
+    window._reload_entries()
+
+    card = window._cards[netflix.id]
+    assert card.category_label.text() == "Eğlence"
+    other = next(c for c in window._cards.values() if c.app_label.text() == "GitHub")
+    assert other.category_label.text() == "—"
+
+    vault.rename_category(cat, "Dizi")
+    window._reload_categories()
+    assert window._cards[netflix.id] is card  # kart yeniden oluşturulmadı
+    assert card.category_label.text() == "Dizi"

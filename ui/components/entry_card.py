@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QPainter
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget,
 )
@@ -13,18 +13,39 @@ from ui import icons, theme
 
 REVEAL_TIMEOUT_MS = 10_000
 MASK_STRING = "•" * 10
+NO_CATEGORY = "—"
 
 # Header satırıyla aynı genişlik şablonu — değişirse oraya da yansıt.
 COL_FAV_W      = 36
 COL_APP_STR    = 3
+COL_CAT_STR    = 2
 COL_USER_STR   = 4
 COL_PW_STR     = 4
 COL_ACTION_W   = 36
 ACTION_COUNT   = 2   # düzenle + "⋯" (geçmiş ve sil menüde)
 
 
+class ElidedLabel(QLabel):
+    """Sığmayan metni yarıda kesmek yerine sonuna "…" koyan etiket.
+
+    `text()` her zaman tam metni döndürür; kısaltma yalnızca çizimde yapılır.
+    Yalnızca düz metin içindir: HTML, satır kaydırma ve girinti uygulanmaz
+    (kullanıcının girdiği "<b>…" gibi adlar olduğu gibi görünür).
+    """
+
+    def paintEvent(self, event) -> None:  # noqa: N802 (Qt adı)
+        """Metni mevcut genişliğe göre "…" ile kısaltarak çizer."""
+        rect = self.contentsRect()
+        shown = self.fontMetrics().elidedText(self.text(), Qt.ElideRight, rect.width())
+        painter = QPainter(self)
+        self.style().drawItemText(
+            painter, rect, int(self.alignment()), self.palette(),
+            self.isEnabled(), shown, self.foregroundRole(),
+        )
+
+
 class EntryCard(QFrame):
-    """Tek satırlık kayıt kartı — favori, ad, kullanıcı, şifre, düzenle, ⋯.
+    """Tek satırlık kayıt kartı — favori, ad, kategori, kullanıcı, şifre, düzenle, ⋯.
 
     Sil satırda doğrudan durmaz: yanlışlıkla tıklanmasın diye "⋯" menüsündedir.
     """
@@ -44,6 +65,7 @@ class EntryCard(QFrame):
         username: str,
         favorite: bool,
         parent: Optional[QWidget] = None,
+        category: Optional[str] = None,
     ) -> None:
         super().__init__(parent)
         self.entry_id = entry_id
@@ -57,6 +79,7 @@ class EntryCard(QFrame):
 
         self._apply_style()
         self._build_ui(app_name, username, favorite)
+        self.set_category(category)
 
     # ---------- style ----------
 
@@ -112,7 +135,7 @@ class EntryCard(QFrame):
         outer.addWidget(self.fav_btn)
 
         # 2) Uygulama adı — kalın başlık (giriş kutusu değil)
-        self.app_label = QLabel(app_name)
+        self.app_label = ElidedLabel(app_name)
         self.app_label.setStyleSheet(
             f"background: transparent; color: {c['text_primary']}; "
             "font-size: 14px; font-weight: 600;"
@@ -121,7 +144,15 @@ class EntryCard(QFrame):
         self.app_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         outer.addWidget(self.app_label, COL_APP_STR)
 
-        # 3) Kullanıcı adı — read-only QLineEdit + sağ kenarda kopya ikonu
+        # 3) Kategori — soluk düz metin; kategorisiz kayıtta "—"
+        self.category_label = ElidedLabel()
+        self.category_label.setStyleSheet(
+            f"background: transparent; color: {c['text_muted']}; font-size: 13px;"
+        )
+        self.category_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        outer.addWidget(self.category_label, COL_CAT_STR)
+
+        # 4) Kullanıcı adı — read-only QLineEdit + sağ kenarda kopya ikonu
         self.user_field = QLineEdit(username)
         self.user_field.setReadOnly(True)
         self.user_field.setCursorPosition(0)
@@ -137,7 +168,7 @@ class EntryCard(QFrame):
         self.user_field.addAction(self.copy_user_action, QLineEdit.TrailingPosition)
         outer.addWidget(self.user_field, COL_USER_STR)
 
-        # 4) Şifre — maskeli QLineEdit + içinde göz + kopya ikonu
+        # 5) Şifre — maskeli QLineEdit + içinde göz + kopya ikonu
         self.pw_field = QLineEdit(MASK_STRING)
         self.pw_field.setReadOnly(True)
         self.pw_field.setCursorPosition(0)
@@ -216,6 +247,11 @@ class EntryCard(QFrame):
         self.eye_action.setText("Şifreyi gizle")
         self._revealed = True
         self._mask_timer.start(REVEAL_TIMEOUT_MS)
+
+    def set_category(self, name: Optional[str]) -> None:
+        """Kategori sütununu günceller (örn. kategori yeniden adlandırılınca)."""
+        self.category_label.setText(name or NO_CATEGORY)
+        self.category_label.setToolTip(name or "Kategorisiz")
 
     def hide_password(self) -> None:
         """Açık şifreyi hemen maskeler (örn. kart aramada gizlenirken)."""

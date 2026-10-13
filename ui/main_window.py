@@ -18,7 +18,7 @@ from ui import icons, theme
 from ui.about_dialog import AboutDialog
 from ui.components.entry_card import (
     EntryCard,
-    COL_FAV_W, COL_APP_STR, COL_USER_STR, COL_PW_STR, COL_ACTION_W, ACTION_COUNT,
+    COL_FAV_W, COL_APP_STR, COL_CAT_STR, COL_USER_STR, COL_PW_STR, COL_ACTION_W, ACTION_COUNT,
 )
 from ui.entry_dialog import EntryDialog
 from ui.generator_dialog import GeneratorDialog
@@ -225,17 +225,22 @@ class MainWindow(QMainWindow):
         spacer.setFixedWidth(COL_FAV_W)
         row.addWidget(spacer)
 
-        app_l = QLabel("Uygulama")
+        # Başlıklar doğrudan büyük harfle: Qt'nin text-transform'u Türkçe
+        # bilmez, "Kategori"yi "KATEGORI" yapar.
+        app_l = QLabel("UYGULAMA")
         row.addWidget(app_l, COL_APP_STR)
 
-        user_l = QLabel("Kullanıcı Adı")
+        cat_l = QLabel("KATEGORİ")
+        row.addWidget(cat_l, COL_CAT_STR)
+
+        user_l = QLabel("KULLANICI ADI")
         row.addWidget(user_l, COL_USER_STR)
 
-        pw_l = QLabel("Şifre")
+        pw_l = QLabel("ŞİFRE")
         row.addWidget(pw_l, COL_PW_STR)
 
         # Aksiyon kolonları — sağa hizalı tek "Eylemler" etiketi
-        actions_l = QLabel("Eylemler")
+        actions_l = QLabel("EYLEMLER")
         actions_l.setAlignment(Qt.AlignCenter)
         actions_l.setFixedWidth(COL_ACTION_W * ACTION_COUNT + 10 * (ACTION_COUNT - 1))
         row.addWidget(actions_l)
@@ -402,8 +407,13 @@ class MainWindow(QMainWindow):
             item.setData(Qt.UserRole, cat.id)
             self.category_list.addItem(item)
             self._category_names[cat.id] = cat.name
-        # Kategori adı aramada da eşleştiği için (örn. yeniden adlandırma) süzgeci tazele
+        # Yeniden adlandırmada kartlar baştan oluşturulmaz: kategori sütununu
+        # güncelle, kategori adı aramada da eşleştiği için süzgeci tazele
         if self._rows:
+            for row in self._rows:
+                card = self._cards.get(row.id)
+                if card is not None:
+                    card.set_category(self._category_names.get(row.category_id))
             self._apply_search()
 
     def _clear_cards(self) -> None:
@@ -439,6 +449,7 @@ class MainWindow(QMainWindow):
                     username=row.username,
                     favorite=row.favorite,
                     parent=self.cards_container,
+                    category=self._category_names.get(row.category_id),
                 )
                 card.reveal_requested.connect(self._on_card_reveal)
                 card.copy_username_requested.connect(self._on_card_copy_user)

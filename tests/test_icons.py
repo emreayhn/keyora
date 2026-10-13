@@ -45,3 +45,20 @@ def test_card_shows_plain_bold_name_without_badge(qapp):
     card = EntryCard(entry_id=1, app_name="İş Bankası", username="ada", favorite=False)
     assert card.app_label.text() == "İş Bankası"
     assert not hasattr(card, "badge")
+
+
+def test_long_category_is_elided_but_text_and_tooltip_stay_full(qapp):
+    from ui.components.entry_card import EntryCard
+
+    long_name = "Sosyal Medya Hesapları ve Diğerleri"
+    card = EntryCard(entry_id=1, app_name="Instagram", username="ada",
+                     favorite=False, category=long_name)
+    card.resize(500, 50)
+    card.show()
+    qapp.processEvents()
+    assert card.category_label.text() == long_name
+    assert card.category_label.toolTip() == long_name
+    card.grab()  # paintEvent kısaltarak çizerken hata vermemeli
+    card.set_category(None)
+    assert card.category_label.text() == "—"
+    card.close()
