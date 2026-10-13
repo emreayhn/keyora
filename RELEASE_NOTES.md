@@ -27,6 +27,8 @@ Yerel, çevrimdışı çalışan masaüstü parola yöneticisi. Şifreler Argon2
 
 ## 1.0.0'dan yükseltme
 
+- **1.0.0'ı kurulum sihirbazıyla kurduysanız:** `Keyora-Setup-1.2.0.exe`'yi çalıştırın; eski sürümün üzerine kurulur, ayrıca kaldırmanız gerekmez. Keyora açıksa sihirbaz kapatmayı teklif eder.
+- **Portable `Keyora.exe` kullanıyorsanız:** yeni exe'yi (veya kurulum sihirbazını) kullanın ve **eski `Keyora.exe` kopyalarını silin**. Kurulum sihirbazı elle kopyalanmış exe'leri bulamaz ve silmez. Kasa exe'nin yanında değil `%LOCALAPPDATA%\Keyora` klasöründe durduğu için exe'yi silmek kasanıza dokunmaz.
 - Kasa ilk açılışta yeni biçime **otomatik taşınır**; kayıtların hiçbiri kaybolmaz.
 - Taşımadan önce otomatik bir **geçiş öncesi yedek** alınır. Bu yedek yalnızca 1.0.0'a dönmek için gerekir ve eski biçimde olduğu için meta verileri düz metin içerir. Yeni sürümden memnunsanız Ayarlar → Yedekleme'den **Eski Yedeği Sil** ile silebilirsiniz.
 - Taşınan kasa Keyora 1.0.0 ile kullanılamaz; 1.0.0 ile açmayı denemeyin. Geri dönmeniz gerekirse geçiş öncesi yedeği kullanın.
