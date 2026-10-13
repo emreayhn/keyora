@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 
 from core.database import default_db_path
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.2.0"
 
 
 class AboutDialog(QDialog):
