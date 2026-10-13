@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
 
         top_bar = QHBoxLayout()
         self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Ara — uygulama veya kullanıcı adı")
+        self.search_edit.setPlaceholderText("Ara — uygulama, kullanıcı adı veya kategori")
         self.search_edit.textChanged.connect(self._on_search_changed)
         # Hızlı yazarken her harfte değil, yazma durunca filtrele
         self._search_timer = QTimer(self)
@@ -176,6 +176,7 @@ class MainWindow(QMainWindow):
 
         self._cards: dict[int, EntryCard] = {}
         self._rows: list[EntrySummary] = []
+        self._category_names: dict[int, str] = {}
 
         self.empty_state = self._build_empty_state()
 
@@ -395,10 +396,15 @@ class MainWindow(QMainWindow):
 
     def _reload_categories(self) -> None:
         self.category_list.clear()
+        self._category_names = {}
         for cat in self.vault.list_categories():
             item = QListWidgetItem(cat.name)
             item.setData(Qt.UserRole, cat.id)
             self.category_list.addItem(item)
+            self._category_names[cat.id] = cat.name
+        # Kategori adı aramada da eşleştiği için (örn. yeniden adlandırma) süzgeci tazele
+        if self._rows:
+            self._apply_search()
 
     def _clear_cards(self) -> None:
         """cards_layout içindeki tüm kartları kaldırır, son stretch'i bırakır."""
@@ -459,7 +465,9 @@ class MainWindow(QMainWindow):
             card = self._cards.get(row.id)
             if card is None:
                 continue
-            visible = matches_search(row, self._search_text)
+            visible = matches_search(
+                row, self._search_text, self._category_names.get(row.category_id)
+            )
             if not visible:
                 card.hide_password()  # gizlenen kartta açık şifre kalmasın
             card.setVisible(visible)
@@ -747,6 +755,7 @@ class MainWindow(QMainWindow):
                 if isinstance(widget, QDialog) and widget.isVisible():
                     widget.reject()
             self._clear_cards()
+            self._category_names = {}
             clear_pending_secret()  # kopyalanmış şifre panoda kalmasın
             self.vault.lock()
         finally:

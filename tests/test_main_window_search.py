@@ -162,3 +162,51 @@ def test_hidden_card_is_masked(window, qapp):
     window._apply_search()
     assert card.isHidden()
     assert card.pw_field.text() == MASK_STRING
+
+
+def test_matches_search_includes_category_name():
+    e = _summary("GitHub", "ada")
+    assert matches_search(e, "iş", "İş")
+    assert not matches_search(e, "iş", None)
+    assert not matches_search(e, "finans", "İş")
+
+
+def test_vault_list_entries_searches_category_names(tmp_path):
+    db = Database(tmp_path / "c.db")
+    vault = Vault(db)
+    vault.initialize(MASTER)
+    is_cat = vault.add_category("İş")
+    vault.add_entry(VaultEntry(None, "Jira", "ada", "x" * 14, None, is_cat))
+    vault.add_entry(VaultEntry(None, "Netflix", "ada", "x" * 14, None, None))
+    assert [e.app_name for e in vault.list_entries(search="İŞ")] == ["Jira"]
+    db.close()
+
+
+def test_window_search_by_category_and_rename(window, qapp):
+    vault = window.vault
+    cat = vault.add_category("Eğlence")
+    netflix = next(r for r in window._rows if r.app_name == "Netflix")
+    entry = vault.get_entry(netflix.id)
+    entry.category_id = cat
+    vault.update_entry(entry)
+    window._reload_categories()
+    window._reload_entries()
+
+    window.search_edit.setText("eğlen")
+    window._apply_search()
+    assert _visible_names(window) == ["Netflix"]
+
+    vault.rename_category(cat, "Dizi")
+    window._reload_categories()  # yeniden adlandırma yalnızca kategorileri yeniler
+    assert _visible_names(window) == []
+    window.search_edit.setText("dizi")
+    window._apply_search()
+    assert _visible_names(window) == ["Netflix"]
+
+
+def test_lock_clears_category_names(window, qapp):
+    window.vault.add_category("İş")
+    window._reload_categories()
+    assert window._category_names
+    window.lock_now()
+    assert window._category_names == {} and window._rows == []
