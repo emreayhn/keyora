@@ -79,7 +79,7 @@ if not exist main.py (
         echo def main^(^):
         echo     app = QApplication^(sys.argv^)
         echo     app.setApplicationName^("Keyora"^)
-        echo     app.setApplicationVersion^("1.2.0"^)
+        echo     app.setApplicationVersion^("1.2.1"^)
         echo     # TODO: MainWindow burada başlatılacak
         echo     print^("Keyora başlatıldı"^)
         echo     sys.exit^(app.exec^(^)^)

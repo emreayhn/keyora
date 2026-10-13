@@ -1,8 +1,18 @@
-# Keyora v1.2.0
+# Keyora v1.2.1
 
 Yerel, çevrimdışı çalışan masaüstü parola yöneticisi. Şifreler Argon2id ile türetilen anahtar kullanılarak Fernet (AES-128-CBC + HMAC-SHA256) altında saklanır. Hiçbir veri internete gönderilmez.
 
-## Bu sürümde
+## 1.2.1'de neler değişti
+
+- 🔎 **Kategoriyle arama:** arama kutusu artık uygulama adı ve kullanıcı adının yanında kategori adında da arar; "finans" yazınca Finans kategorisindeki kayıtlar gelir.
+- 🗂 **Kategori sütunu:** kayıt listesinde her kaydın kategorisi görünür; kategorisiz kayıtlarda "—".
+- ⚡ **Arama hızlandı:** arama yaparken liste artık takılmıyor ve titremiyor; yazmayı bırakınca sonuçlar hemen süzülür.
+- ✂ Uzun uygulama ve kategori adları yarıda kesilmek yerine "…" ile kısaltılır; tam ad fare üstüne gelince görünür.
+- 🐞 Giriş ekranında yanlış şifre girilip Enter'a basılınca "Hatalı şifre." yerine "Şifre boş olamaz." görünüyordu; düzeltildi.
+- 🙈 Aramada gizlenen bir kayıtta açık bırakılan şifre hemen maskelenir.
+- ℹ Hakkında penceresine **"Yeni sürüm var mı?"** bağlantısı eklendi. Tıklayınca GitHub'daki sürümler sayfası tarayıcıda açılır; Keyora'nın kendisi internete bağlanmaz ve sürüm denetimi yapmaz.
+
+## 1.2.0'da gelenler
 
 ### Güvenlik
 - 🔐 **Meta veri de şifreli:** uygulama adı, kullanıcı adı, notlar ve kategori adları artık şifreli saklanır. Önceki sürümlerde bunlar düz metindi; yalnızca şifreler şifreliydi.
@@ -20,16 +30,17 @@ Yerel, çevrimdışı çalışan masaüstü parola yöneticisi. Şifreler Argon2
 - 📥 **Başka uygulamalardan içe aktarma:** Chrome / Edge, Firefox, Bitwarden, KeePassXC, KeePass 2, LastPass ve Keyora CSV. İçe aktarma ekranı her biçim için dışa aktarma adımlarını ve beklenen kolonları gösterir; içe aktarmadan önce önizleme verir, aynı kayıtları atlar ve öncesinde yedek alır. İşlem tamamen yereldir. 2FA (TOTP) kodları güvenlik gereği aktarılmaz; kaç tane atlandığı söylenir.
 
 ### Arayüz
-- 🏷 Kayıt adı kalın başlık + renkli baş harf rozeti olarak gösterilir.
+- 🏷 Kayıt adı kalın başlık olarak gösterilir.
 - ✏ Düzenle ve şifre geçmişi simgeleri daha anlaşılır; **Sil** artık "⋯" menüsünde, silme onaylarında varsayılan cevap "Hayır".
 - 🗕 Giriş ve ilk kurulum pencereleri küçültülebilir ve görev çubuğunda görünür.
 - Panel ve kart içindeki koyu "kutu" görünümleri giderildi.
 
-## 1.0.0'dan yükseltme
+## Yükseltme
 
-- **1.0.0'ı kurulum sihirbazıyla kurduysanız:** `Keyora-Setup-1.2.0.exe`'yi çalıştırın; eski sürümün üzerine kurulur, ayrıca kaldırmanız gerekmez. Keyora açıksa sihirbaz kapatmayı teklif eder.
+- **1.2.0 kullanıyorsanız:** `Keyora-Setup-1.2.1.exe`'yi çalıştırın; üzerine kurulur, kasanız ve ayarlarınız olduğu gibi kalır. Portable kullanıyorsanız eski `Keyora.exe`'yi yenisiyle değiştirin.
+- **1.0.0'ı kurulum sihirbazıyla kurduysanız:** `Keyora-Setup-1.2.1.exe`'yi çalıştırın; eski sürümün üzerine kurulur, ayrıca kaldırmanız gerekmez. Keyora açıksa sihirbaz kapatmayı teklif eder.
 - **Portable `Keyora.exe` kullanıyorsanız:** yeni exe'yi (veya kurulum sihirbazını) kullanın ve **eski `Keyora.exe` kopyalarını silin**. Kurulum sihirbazı elle kopyalanmış exe'leri bulamaz ve silmez. Kasa exe'nin yanında değil `%LOCALAPPDATA%\Keyora` klasöründe durduğu için exe'yi silmek kasanıza dokunmaz.
-- Kasa ilk açılışta yeni biçime **otomatik taşınır**; kayıtların hiçbiri kaybolmaz.
+- 1.0.0'dan gelen kasa ilk açılışta yeni biçime **otomatik taşınır**; kayıtların hiçbiri kaybolmaz.
 - Taşımadan önce otomatik bir **geçiş öncesi yedek** alınır. Bu yedek yalnızca 1.0.0'a dönmek için gerekir ve eski biçimde olduğu için meta verileri düz metin içerir. Yeni sürümden memnunsanız Ayarlar → Yedekleme'den **Eski Yedeği Sil** ile silebilirsiniz.
 - Taşınan kasa Keyora 1.0.0 ile kullanılamaz; 1.0.0 ile açmayı denemeyin. Geri dönmeniz gerekirse geçiş öncesi yedeği kullanın.
 
@@ -37,13 +48,13 @@ Yerel, çevrimdışı çalışan masaüstü parola yöneticisi. Şifreler Argon2
 
 | Dosya | Açıklama |
 |---|---|
-| `Keyora-Setup-1.2.0.exe` | Inno Setup installer (önerilen) |
+| `Keyora-Setup-1.2.1.exe` | Inno Setup installer (önerilen) |
 | `Keyora.exe` | Tek dosya portable build |
 
 ## Kurulum
 
 **Seçenek A — Installer**
-1. `Keyora-Setup-1.2.0.exe` indir ve çalıştır
+1. `Keyora-Setup-1.2.1.exe` indir ve çalıştır
 2. Hedef dizini seç (varsayılan `%LOCALAPPDATA%\Programs\Keyora`)
 3. Başlat menüsünden Keyora'yı aç
 
@@ -89,7 +100,7 @@ venv\Scripts\pyinstaller keyora.spec --clean --noconfirm
 :: 4) (İsteğe bağlı) Installer üret — önce Inno Setup 6 kur:
 ::    https://jrsoftware.org/isdl.php
 "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\keyora.iss
-:: → installer\Output\Keyora-Setup-1.2.0.exe
+:: → installer\Output\Keyora-Setup-1.2.1.exe
 ```
 
 Sürüm numarası şu dosyalarda geçer: `main.py`, `setup.bat`, `ui/about_dialog.py`, `resources/version_info.txt`, `installer/keyora.iss`, `README.md`.
@@ -98,13 +109,13 @@ Sürüm numarası şu dosyalarda geçer: `main.py`, `setup.bat`, `ui/about_dialo
 
 1. Yeni bir tag oluştur:
    ```bat
-   git tag -a v1.2.0 -m "Keyora 1.2.0"
-   git push origin v1.2.0
+   git tag -a v1.2.1 -m "Keyora 1.2.1"
+   git push origin v1.2.1
    ```
 2. GitHub repo → Releases → Draft a new release
-3. Tag: `v1.2.0`; başlık: `Keyora 1.2.0`
-4. Açıklamaya bu dosyanın **Bu sürümde** ve **1.0.0'dan yükseltme** bölümlerini yapıştır
+3. Tag: `v1.2.1`; başlık: `Keyora 1.2.1`
+4. Açıklamaya bu dosyanın **1.2.1'de neler değişti**, **1.2.0'da gelenler** ve **Yükseltme** bölümlerini yapıştır
 5. Asset olarak yükle:
    - `dist\Keyora.exe`
-   - `installer\Output\Keyora-Setup-1.2.0.exe` (varsa)
+   - `installer\Output\Keyora-Setup-1.2.1.exe` (varsa)
 6. **Publish release**
