@@ -71,6 +71,9 @@ class MainWindow(QMainWindow):
             self, "Kasa yeni formata taşındı",
             "Kasanızdaki uygulama adları, kullanıcı adları, notlar ve kategoriler "
             "artık şifreli.\n\n"
+            "Taşınan kasa Keyora 1.0.0 ile kullanılamaz. Bilgisayarınızda eski "
+            "Keyora.exe kopyaları (örn. masaüstünde) varsa onları silin; "
+            "Keyora'yı yalnızca bu sürümle açın.\n\n"
             "Geçişten önce alınan yedek, Keyora 1.0.0'a geri dönebilmeniz için "
             "saklandı. Bu yedekte şifreleriniz şifreli, ancak uygulama adları, "
             "kullanıcı adları ve notlar DÜZ METİN:\n"

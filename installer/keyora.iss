@@ -1,4 +1,4 @@
-; Keyora Inno Setup script
+﻿; Keyora Inno Setup script
 ; Build:   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\keyora.iss
 ; Output:  installer\Output\Keyora-Setup-1.2.0.exe
 ;
@@ -29,12 +29,19 @@ OutputDir=Output
 OutputBaseFilename=Keyora-Setup-{#MyAppVersion}
 SetupIconFile=..\resources\keyora.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
+; Uygulamalar listesinde "Keyora 1.2.0 sürümü" yerine yalnızca "Keyora"
+UninstallDisplayName={#MyAppName}
 
 Compression=lzma2
 SolidCompression=yes
 
 WizardStyle=modern
 LicenseFile=..\LICENSE
+
+; Güncelleme sırasında Keyora açıksa exe kilitli olur: Restart Manager ile
+; kullanıcıya kapatmayı teklif et, kurulumdan sonra kendiliğinden yeniden açma.
+CloseApplications=yes
+RestartApplications=no
 
 ; Windows 10 (1809) ve üzeri
 MinVersion=10.0.17763
@@ -65,3 +72,17 @@ Name: "{autodesktop}\{#MyAppName}";        Filename: "{app}\{#MyAppExeName}"; Ta
 Filename: "{app}\{#MyAppExeName}"; \
     Description: "{cm:LaunchProgram,{#MyAppName}}"; \
     Flags: nowait postinstall skipifsilent
+
+[Code]
+// Kaldırma kasayı silmez; kullanıcı nerede durduğunu bilsin.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if (CurUninstallStep = usPostUninstall) and not UninstallSilent then
+    MsgBox('Keyora kaldırıldı. Kasanız ve yedekleriniz SİLİNMEDİ (Keyora''yı ' +
+      'kullanan Windows hesabının klasöründe, varsayılan olarak):' + #13#10 +
+      ExpandConstant('{localappdata}\Keyora') + #13#10#13#10 +
+      'Ayarlar''dan başka bir yedek klasörü seçtiyseniz yedekler orada durur.' + #13#10#13#10 +
+      'Keyora''yı yeniden kurarsanız aynı kasa açılır. Tamamen silmek ' +
+      'istiyorsanız bu klasörü elle silin; master password olmadan kasa açılamaz.',
+      mbInformation, MB_OK);
+end;
