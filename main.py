@@ -65,7 +65,7 @@ def main() -> int:
     """Uygulamayı başlatır ve kilit döngüsünü yönetir."""
     app = QApplication(sys.argv)
     app.setApplicationName("Keyora")
-    app.setApplicationVersion("1.2.0")
+    app.setApplicationVersion("1.2.1")
 
     icon_path = _resource_path("resources/keyora.png")
     if icon_path.exists():

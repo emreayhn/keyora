@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from core.database import default_db_path
 from ui import theme
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 RELEASES_URL = "https://github.com/emreayhn/keyora/releases"
 
 
