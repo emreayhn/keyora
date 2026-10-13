@@ -185,59 +185,6 @@ def more_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
     return QIcon(pm)
 
 
-# Rozet renkleri: iki temada da okunabilen pastel tonlar (üstüne koyu metin)
-BADGE_COLORS = (
-    "#F4A6B8", "#F7C59F", "#F3DE8A", "#B5E2B0", "#9ED8DB",
-    "#A7C7F2", "#C3B1E1", "#E8B4D8", "#D4C4A8", "#B8D8BA",
-)
-BADGE_TEXT = "#1F1D2E"
-
-
-def badge_letter(name: str) -> str:
-    """Rozetteki harf — Türkçe büyük harf kuralıyla (i → İ, ı → I)."""
-    for ch in name.strip():
-        if ch.isalnum():
-            return {"i": "İ", "ı": "I"}.get(ch, ch.upper())
-    return "#"
-
-
-def badge_color(name: str) -> str:
-    """Ada göre sabit renk: aynı kayıt her açılışta aynı renkte görünür.
-
-    hash() oturumdan oturuma değiştiği için kullanılmaz; karakter kodlarının
-    basit, deterministik bir toplamı alınır.
-    """
-    key = name.strip().lower()
-    total = sum((i + 1) * ord(ch) for i, ch in enumerate(key))
-    return BADGE_COLORS[total % len(BADGE_COLORS)]
-
-
-def initial_badge(name: str, size: int = 28) -> QPixmap:
-    """Kaydın baş harfiyle renkli yuvarlak rozet — ağ gerektirmeyen görsel kimlik.
-
-    Bilerek önbelleksiz: uygulama adı (kasada şifreli) önbellek anahtarı olarak
-    kilitten sonra da bellekte kalmasın. Önbellek yalnızca harf + renk tutar.
-    """
-    return _badge_pixmap(badge_letter(name), badge_color(name), size)
-
-
-@lru_cache(maxsize=512)
-def _badge_pixmap(letter: str, color: str, size: int) -> QPixmap:
-    pm = _new_pixmap(size)
-    p = _painter(pm)
-    p.setPen(Qt.NoPen)
-    p.setBrush(QBrush(QColor(color)))
-    p.drawEllipse(0, 0, size, size)
-    font = p.font()
-    font.setBold(True)
-    font.setPixelSize(int(size * 0.48))
-    p.setFont(font)
-    p.setPen(QColor(BADGE_TEXT))
-    p.drawText(pm.rect(), Qt.AlignCenter, letter)
-    p.end()
-    return pm
-
-
 @lru_cache(maxsize=64)
 def trash_icon(size: int = ICON_SIZE, color: Optional[str] = None) -> QIcon:
     color = _resolve(color, "danger")

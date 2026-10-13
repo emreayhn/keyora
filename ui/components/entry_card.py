@@ -21,11 +21,10 @@ COL_USER_STR   = 4
 COL_PW_STR     = 4
 COL_ACTION_W   = 36
 ACTION_COUNT   = 2   # düzenle + "⋯" (geçmiş ve sil menüde)
-BADGE_SIZE     = 28
 
 
 class EntryCard(QFrame):
-    """Tek satırlık kayıt kartı — favori, rozet + ad, kullanıcı, şifre, düzenle, ⋯.
+    """Tek satırlık kayıt kartı — favori, ad, kullanıcı, şifre, düzenle, ⋯.
 
     Sil satırda doğrudan durmaz: yanlışlıkla tıklanmasın diye "⋯" menüsündedir.
     """
@@ -112,26 +111,15 @@ class EntryCard(QFrame):
         self.fav_btn.clicked.connect(lambda: self.favorite_requested.emit(self.entry_id))
         outer.addWidget(self.fav_btn)
 
-        # 2) Uygulama adı — baş harf rozeti + kalın başlık (giriş kutusu değil)
-        app_box = QWidget()
-        app_box.setObjectName("AppBox")
-        app_box.setStyleSheet("QWidget#AppBox { background: transparent; }")
-        app_row = QHBoxLayout(app_box)
-        app_row.setContentsMargins(0, 0, 0, 0)
-        app_row.setSpacing(10)
-        self.badge = QLabel()
-        self.badge.setPixmap(icons.initial_badge(app_name, BADGE_SIZE))
-        self.badge.setFixedSize(BADGE_SIZE, BADGE_SIZE)
+        # 2) Uygulama adı — kalın başlık (giriş kutusu değil)
         self.app_label = QLabel(app_name)
         self.app_label.setStyleSheet(
-            f"color: {c['text_primary']}; font-size: 14px; font-weight: 600;"
+            f"background: transparent; color: {c['text_primary']}; "
+            "font-size: 14px; font-weight: 600;"
         )
         self.app_label.setToolTip(app_name)
         self.app_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
-        app_row.addWidget(self.badge)
-        app_row.addWidget(self.app_label, 1)
-        app_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        outer.addWidget(app_box, COL_APP_STR)
+        outer.addWidget(self.app_label, COL_APP_STR)
 
         # 3) Kullanıcı adı — read-only QLineEdit + sağ kenarda kopya ikonu
         self.user_field = QLineEdit(username)

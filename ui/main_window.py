@@ -215,7 +215,6 @@ class MainWindow(QMainWindow):
         row.addWidget(spacer)
 
         app_l = QLabel("Uygulama")
-        app_l.setContentsMargins(4, 0, 0, 0)
         row.addWidget(app_l, COL_APP_STR)
 
         user_l = QLabel("Kullanıcı Adı")
