@@ -87,15 +87,22 @@ class EntrySummary:
     updated_at: str
 
 
-def matches_search(entry: EntrySummary, search: str) -> bool:
-    """Kayıt, arama metnini uygulama adında veya kullanıcı adında içeriyor mu?
+def matches_search(
+    entry: EntrySummary, search: str, category_name: Optional[str] = None
+) -> bool:
+    """Kayıt, arama metnini uygulama adında, kullanıcı adında veya kategori
+    adında içeriyor mu?
 
     Boş arama her kayıtla eşleşir. Karşılaştırma `fold` ile yapılır.
     """
     needle = fold(search.strip())
     if not needle:
         return True
-    return needle in fold(entry.app_name) or needle in fold(entry.username)
+    return (
+        needle in fold(entry.app_name)
+        or needle in fold(entry.username)
+        or (category_name is not None and needle in fold(category_name))
+    )
 
 
 @dataclass(frozen=True)
@@ -397,7 +404,11 @@ class Vault:
         rows = self.db.list_entries(category_id=category_id, favorites_only=favorites_only)
         items = [self._summary(r) for r in rows]
         if search:
-            items = [e for e in items if matches_search(e, search)]
+            names = {c.id: c.name for c in self.list_categories()}
+            items = [
+                e for e in items
+                if matches_search(e, search, names.get(e.category_id))
+            ]
         items.sort(key=lambda e: (not e.favorite, fold(e.app_name), e.id))
         return items
 
