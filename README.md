@@ -127,4 +127,6 @@ Vault tek bir SQLite dosyasında saklanır:
 
 ## Sürüm
 
+1.2.0 — meta veri şifreleme, otomatik yedekleme, Windows kilidi, şifre sağlığı raporu, başka uygulamalardan içe aktarma
+
 1.0.0 — ilk yayın

@@ -2,7 +2,7 @@
 
 Şema sürümleri (settings.schema_version):
   1 — v1.0.0: app_name / username / notes / kategori adı düz metin.
-  2 — v1.1.0: bu alanlar da Fernet ile şifreli (BLOB); Argon2 parametreleri
+  2 — v1.2.0: bu alanlar da Fernet ile şifreli (BLOB); Argon2 parametreleri
       settings'te (kdf_*). Geçiş anahtar gerektirdiği için Vault.unlock içinde
       yapılır, bkz. core/vault.py.
 """

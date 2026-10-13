@@ -1,11 +1,11 @@
 ; Keyora Inno Setup script
 ; Build:   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\keyora.iss
-; Output:  installer\Output\Keyora-Setup-1.0.0.exe
+; Output:  installer\Output\Keyora-Setup-1.2.0.exe
 ;
 ; Önkoşul: önce `pyinstaller keyora.spec --clean --noconfirm` ile dist\Keyora.exe üret.
 
 #define MyAppName       "Keyora"
-#define MyAppVersion    "1.0.0"
+#define MyAppVersion    "1.2.0"
 #define MyAppPublisher  "Emre Ayhan"
 #define MyAppExeName    "Keyora.exe"
 
