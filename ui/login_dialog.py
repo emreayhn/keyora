@@ -44,7 +44,9 @@ class LoginDialog(QDialog):
         self.pw_edit = QLineEdit()
         self.pw_edit.setEchoMode(QLineEdit.Password)
         self.pw_edit.setPlaceholderText("Master password")
-        self.pw_edit.returnPressed.connect(self._on_unlock)
+        # Enter'ı varsayılan "Kilidi Aç" düğmesi karşılar. returnPressed'e de
+        # bağlamak girişi iki kez çalıştırıyor, yanlış şifrede "Hatalı şifre."
+        # yerine "Şifre boş olamaz." gösteriyordu.
 
         self.show_pw = QCheckBox("Şifreyi göster")
         self.show_pw.toggled.connect(self._toggle_echo)
