@@ -7,8 +7,10 @@ from PySide6.QtWidgets import (
 )
 
 from core.database import default_db_path
+from ui import theme
 
 APP_VERSION = "1.2.0"
+RELEASES_URL = "https://github.com/emreayhn/keyora/releases"
 
 
 class AboutDialog(QDialog):
@@ -30,6 +32,22 @@ class AboutDialog(QDialog):
 
         version = QLabel(f"Sürüm {APP_VERSION}")
         version.setProperty("role", "muted")
+
+        # Keyora internete bağlanmaz; sürüm denetimi yok. Bağlantı yalnızca
+        # kullanıcı tıklarsa tarayıcıda açılır.
+        # Temanın vurgu rengi açık zeminde okunmuyor; bağlantı ana metin renginde
+        link = theme.palette()["text_primary"]
+        updates = QLabel(
+            f"<a href='{RELEASES_URL}' style='color: {link}; font-weight: 600;'>"
+            "Yeni sürüm var mı?</a> "
+            "Sürümler sayfası tarayıcında açılır. Keyora internete bağlanmadığı "
+            "için yeni sürümü kendisi denetlemez."
+        )
+        updates.setObjectName("updatesLink")
+        updates.setTextFormat(Qt.RichText)
+        updates.setWordWrap(True)
+        updates.setOpenExternalLinks(True)
+        updates.setProperty("role", "muted")
 
         desc = QLabel(
             "Yerel, çevrimdışı çalışan masaüstü parola yöneticisi. "
@@ -70,6 +88,7 @@ class AboutDialog(QDialog):
 
         layout.addWidget(title)
         layout.addWidget(version)
+        layout.addWidget(updates)
         layout.addSpacing(8)
         layout.addWidget(desc)
         layout.addSpacing(4)

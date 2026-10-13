@@ -217,6 +217,11 @@ class EntryCard(QFrame):
         self._revealed = True
         self._mask_timer.start(REVEAL_TIMEOUT_MS)
 
+    def hide_password(self) -> None:
+        """Açık şifreyi hemen maskeler (örn. kart aramada gizlenirken)."""
+        if self._revealed:
+            self._mask_password()
+
     def _mask_password(self) -> None:
         self.pw_field.setText(MASK_STRING)
         self.pw_field.setCursorPosition(0)

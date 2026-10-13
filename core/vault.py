@@ -87,6 +87,17 @@ class EntrySummary:
     updated_at: str
 
 
+def matches_search(entry: EntrySummary, search: str) -> bool:
+    """Kayıt, arama metnini uygulama adında veya kullanıcı adında içeriyor mu?
+
+    Boş arama her kayıtla eşleşir. Karşılaştırma `fold` ile yapılır.
+    """
+    needle = fold(search.strip())
+    if not needle:
+        return True
+    return needle in fold(entry.app_name) or needle in fold(entry.username)
+
+
 @dataclass(frozen=True)
 class Category:
     """Çözülmüş kategori."""
@@ -386,11 +397,7 @@ class Vault:
         rows = self.db.list_entries(category_id=category_id, favorites_only=favorites_only)
         items = [self._summary(r) for r in rows]
         if search:
-            needle = fold(search)
-            items = [
-                e for e in items
-                if needle in fold(e.app_name) or needle in fold(e.username)
-            ]
+            items = [e for e in items if matches_search(e, search)]
         items.sort(key=lambda e: (not e.favorite, fold(e.app_name), e.id))
         return items
 

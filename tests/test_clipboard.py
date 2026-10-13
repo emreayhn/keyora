@@ -72,6 +72,7 @@ def test_lock_now_clears_clipboard(monkeypatch):
     class FakeWindow:
         _locking = False
         _tick_timer = type("T", (), {"stop": lambda self: None})()
+        _search_timer = type("T", (), {"stop": lambda self: None})()
         vault = type("V", (), {"lock": lambda self: calls.append("lock")})()
         def _clear_cards(self): pass
         def close(self): calls.append("close")

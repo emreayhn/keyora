@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QScrollArea, QApplication, QDialog,
 )
 
-from core.vault import Vault
+from core.vault import EntrySummary, Vault, matches_search
 from utils.win_integration import CaptureGuard
 from ui import icons, theme
 from ui.about_dialog import AboutDialog
@@ -30,6 +30,7 @@ from utils.clipboard import clear_pending_secret, copy_to_clipboard
 from utils import csv_io
 
 COUNTDOWN_TICK_MS = 1000
+SEARCH_DEBOUNCE_MS = 150
 
 
 class MainWindow(QMainWindow):
@@ -143,6 +144,11 @@ class MainWindow(QMainWindow):
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText("Ara — uygulama veya kullanıcı adı")
         self.search_edit.textChanged.connect(self._on_search_changed)
+        # Hızlı yazarken her harfte değil, yazma durunca filtrele
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(SEARCH_DEBOUNCE_MS)
+        self._search_timer.timeout.connect(self._apply_search)
 
         self.new_btn = QPushButton("  Yeni Kayıt")
         self.new_btn.setIcon(icons.plus_icon(16))
@@ -169,6 +175,7 @@ class MainWindow(QMainWindow):
         self.entry_scroll.setFrameShape(QFrame.NoFrame)
 
         self._cards: dict[int, EntryCard] = {}
+        self._rows: list[EntrySummary] = []
 
         self.empty_state = self._build_empty_state()
 
@@ -400,38 +407,65 @@ class MainWindow(QMainWindow):
             item = self.cards_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
-                widget.setParent(None)
+                # setParent(None) kartı bir anlığına üst düzey pencereye çevirip
+                # titretiyordu ve yavaştı; gizleyip silmek yeterli.
+                widget.hide()
                 widget.deleteLater()
         self._cards.clear()
+        self._rows = []
 
     def _reload_entries(self) -> None:
-        self._clear_cards()
-        rows = self.vault.list_entries(
-            category_id=self._current_category,
-            favorites_only=self._favorites_only,
-            search=self._search_text or None,
-        )
-        for row in rows:
-            card = EntryCard(
-                entry_id=row.id,
-                app_name=row.app_name,
-                username=row.username,
-                favorite=row.favorite,
-                parent=self.cards_container,
+        """Seçili kategori/favori filtresindeki kartları baştan oluşturur.
+
+        Arama burada uygulanmaz; `_apply_search` mevcut kartları gizler/gösterir.
+        """
+        self.cards_container.setUpdatesEnabled(False)
+        try:
+            self._clear_cards()
+            rows = self.vault.list_entries(
+                category_id=self._current_category,
+                favorites_only=self._favorites_only,
             )
-            card.reveal_requested.connect(self._on_card_reveal)
-            card.copy_username_requested.connect(self._on_card_copy_user)
-            card.copy_password_requested.connect(self._on_card_copy_pw)
-            card.history_requested.connect(self._on_card_history)
-            card.edit_requested.connect(self._on_card_edit)
-            card.favorite_requested.connect(self._on_card_favorite)
-            card.delete_requested.connect(self._on_card_delete)
+            for row in rows:
+                card = EntryCard(
+                    entry_id=row.id,
+                    app_name=row.app_name,
+                    username=row.username,
+                    favorite=row.favorite,
+                    parent=self.cards_container,
+                )
+                card.reveal_requested.connect(self._on_card_reveal)
+                card.copy_username_requested.connect(self._on_card_copy_user)
+                card.copy_password_requested.connect(self._on_card_copy_pw)
+                card.history_requested.connect(self._on_card_history)
+                card.edit_requested.connect(self._on_card_edit)
+                card.favorite_requested.connect(self._on_card_favorite)
+                card.delete_requested.connect(self._on_card_delete)
 
-            self.cards_layout.insertWidget(self.cards_layout.count() - 1, card)
-            self._cards[row.id] = card
+                self.cards_layout.insertWidget(self.cards_layout.count() - 1, card)
+                self._cards[row.id] = card
 
-        self.status.showMessage(f"{len(rows)} kayıt")
-        self._update_empty_state(len(rows))
+            self._rows = rows
+            self._apply_search()
+        finally:
+            self.cards_container.setUpdatesEnabled(True)
+
+    def _apply_search(self) -> None:
+        """Arama metnine uymayan kartları gizler; kartları yeniden oluşturmaz."""
+        self._search_timer.stop()
+        self._search_text = self.search_edit.text().strip()
+        shown = 0
+        for row in self._rows:
+            card = self._cards.get(row.id)
+            if card is None:
+                continue
+            visible = matches_search(row, self._search_text)
+            if not visible:
+                card.hide_password()  # gizlenen kartta açık şifre kalmasın
+            card.setVisible(visible)
+            shown += visible
+        self.status.showMessage(f"{shown} kayıt")
+        self._update_empty_state(shown)
 
     # ---------- filters ----------
 
@@ -446,9 +480,8 @@ class MainWindow(QMainWindow):
         self._favorites_only = False
         self._reload_entries()
 
-    def _on_search_changed(self, text: str) -> None:
-        self._search_text = text.strip()
-        self._reload_entries()
+    def _on_search_changed(self, _text: str) -> None:
+        self._search_timer.start()
 
     # ---------- categories ----------
 
@@ -707,6 +740,7 @@ class MainWindow(QMainWindow):
             return
         self._locking = True
         self._tick_timer.stop()
+        self._search_timer.stop()
         try:
             # Açık diyaloglarda (düzenleme, geçmiş…) çözülmüş veri kalmasın
             for widget in QApplication.topLevelWidgets():
